@@ -1,186 +1,92 @@
+
+
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Delivery Overview 📦</title>
-  <style>
-    :root{--bg:#0b1220;--card:#111a2e;--text:#e7eeff;--muted:#93a4c7;--acc:#4f8cff;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text);min-height:100vh}
-    .wrap{max-width:1100px;margin:0 auto;padding:22px 14px}
-    header{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
-    h1{font-size:18px;margin:0}
-    .sub{color:var(--muted);font-size:13px;line-height:1.4}
-    .card{background:var(--card);border:1px solid rgba(34,49,88,.8);border-radius:16px;padding:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
-    input, select{
-      width:100%;border:1px solid rgba(34,49,88,.9);background:#0d1429;color:var(--text);
-      padding:10px 12px;border-radius:12px;outline:none
-    }
-    input::placeholder{color:rgba(147,164,199,.75)}
-    input:focus, select:focus{border-color:rgba(79,140,255,.8);box-shadow:0 0 0 4px rgba(79,140,255,.15)}
-    .btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
-    .btn.primary{background:linear-gradient(135deg,var(--acc),#6d5cff);border-color:transparent}
-    .btn:disabled{opacity:.55;cursor:not-allowed}
-    .btn.icon{width:40px;height:40px;display:inline-grid;place-items:center;padding:0;border-radius:12px;font-weight:800}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Delivery Overview 📦</title>
 
-    .table{width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;border:1px solid rgba(34,49,88,.8)}
-    /* ✅ default left align */
-    .table th,.table td{
-      padding:10px 12px;border-bottom:1px solid rgba(34,49,88,.7);
-      font-size:13px;vertical-align:top;
-      text-align:left;
-    }
-    .table th{color:var(--muted);font-weight:600;background:#0d1429}
-    .table tr:last-child td{border-bottom:none}
-    .table th.right,.table td.right{text-align:right}
-
-    .muted{color:var(--muted)}
-    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid rgba(34,49,88,.8);font-size:12px;color:var(--muted)}
-    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
-    .status.ready .dot{background:var(--ok)}
-    .status.missing .dot{background:var(--bad)}
-    .two{display:grid;grid-template-columns: 420px 1fr;gap:14px}
-    @media (max-width: 980px){.two{grid-template-columns:1fr}}
-    .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
-    .center{min-height:100vh;display:grid;place-items:center}
-    .hidden{display:none !important}
-    .kvRow{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin:12px 0 6px}
-    .kvBlock{min-width:0}
-    .kvLabel{color:var(--muted);font-size:12px}
-    .kvValue{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .kvValue.right{text-align:right}
-
-    /* Login UX */
-    .loginCard{max-width:520px;width:100%;padding:18px}
-    .loginHeader{text-align:center;margin-bottom:10px}
-    .loginForm{max-width:380px;margin:0 auto}
-    .loginActions{justify-content:center}
-    .loginMsg{text-align:center;min-height:18px}
-
-    /* Master create panel */
-    .panelTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
-    .divider{height:1px;background:rgba(34,49,88,.7);margin:12px 0}
-  </style>
+<style>
+:root{--bg:#0b1220;--card:#111a2e;--text:#e7eeff;--muted:#93a4c7;--acc:#4f8cff;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 14px}
+.card{background:var(--card);border:1px solid rgba(34,49,88,.8);border-radius:16px;padding:14px}
+.row{display:flex;gap:10px;align-items:center}
+.hidden{display:none!important}
+.btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
+.btn.primary{background:linear-gradient(135deg,var(--acc),#6d5cff);border-color:transparent}
+input{width:100%;background:#0d1429;border:1px solid rgba(34,49,88,.9);color:var(--text);padding:10px;border-radius:12px}
+.table{width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;border:1px solid rgba(34,49,88,.8)}
+.table th,.table td{padding:10px 12px;border-bottom:1px solid rgba(34,49,88,.7);text-align:left}
+.status{display:inline-flex;gap:6px;align-items:center;font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.status.ready .dot{background:var(--ok)}
+.center{min-height:100vh;display:grid;place-items:center}
+.muted{color:var(--muted)}
+</style>
 </head>
+
 <body>
 
+<!-- LOGIN -->
 <section id="loginView" class="center">
-  <div class="card loginCard">
-    <div class="loginHeader">
-      <h1>Delivery Overview 📦</h1>
+  <div class="card" style="max-width:420px;width:100%;text-align:center">
+    <h1>Delivery Overview 📦</h1>
+    <input id="keyInput" type="password" placeholder="Password" />
+    <div class="row" style="justify-content:center;margin-top:12px">
+      <button id="loginBtn" class="btn primary">Login</button>
+      <button id="clearBtn" class="btn">Clear</button>
     </div>
-
-    <div class="loginForm">
-      <label for="keyInput">Password</label>
-      <input id="keyInput" type="password" autocomplete="current-password" placeholder="Enter password…" />
-
-      <div class="row loginActions" style="margin-top:12px">
-        <button id="loginBtn" class="btn primary" type="button">Login</button>
-        <button id="clearBtn" class="btn" type="button">Clear</button>
-      </div>
-
-      <div id="loginMsg" class="hint loginMsg"></div>
-    </div>
+    <div id="loginMsg" class="muted" style="margin-top:10px"></div>
   </div>
 </section>
 
+<!-- PORTAL -->
 <section id="portalView" class="hidden">
   <div class="wrap">
-    <header>
-      <div>
-        <h1>Delivery Overview 📦</h1>
-        <div class="sub">Open an order to enter / check shipment details</div>
-      </div>
+
+    <header class="row" style="justify-content:space-between">
+      <h1>Delivery Overview 📦</h1>
       <div class="row">
-        <button id="addToggleBtn" class="btn icon hidden" type="button" title="Add order">+</button>
-        <button id="reloadBtn" class="btn" type="button">Reload</button>
-        <button id="logoutBtn" class="btn" type="button">Logout</button>
+        <button id="reloadBtn" class="btn">Reload</button>
+        <button id="logoutBtn" class="btn">Logout</button>
       </div>
     </header>
 
-    <div class="two">
-      <section class="card">
+    <div class="row" style="gap:14px;align-items:flex-start">
 
-        <div id="createPanel" class="hidden">
-          <div class="panelTop">
-            <div style="min-width:0">
-              <div style="font-weight:800">New order</div>
-            </div>
-            <button id="addCloseBtn" class="btn" type="button">Close</button>
-          </div>
-
-          <label>Customer</label>
-          <input id="newCustomer" placeholder="Customer name…" />
-
-          <label>Mail Customer</label>
-          <input id="newMailCustomer" placeholder="customer@email.com" />
-
-          <label>Supplier</label>
-          <select id="newSupplier">
-            <option value="Kubus Sports">Kubus Sports</option>
-            <option value="Equipe Trading">Equipe Trading</option>
-            <option value="Point-7">Point-7</option>
-          </select>
-
-          <label>Order ID</label>
-          <input id="newOrderId" placeholder="Order ID…" />
-
-          <div class="row" style="margin-top:12px">
-            <button id="createBtn" class="btn primary" type="button">Create</button>
-          </div>
-
-          <div id="createMsg" class="hint"></div>
-          <div class="divider"></div>
-        </div>
-
-        <div class="row" style="justify-content:flex-end">
-          <span id="statusBadge" class="status missing"><span class="dot"></span><span id="statusText">No selection</span></span>
-        </div>
-
-        <div id="noSelection" class="hint">Open an order from the table.</div>
+      <!-- LEFT -->
+      <section class="card" style="flex:1">
+        <div id="noSelection" class="muted">Open an order from the table.</div>
 
         <div id="form" class="hidden">
-          <!-- ✅ Supplier removed from left pane -->
-          <div class="kvRow">
-            <div class="kvBlock" style="flex:1">
-              <div class="kvLabel">Customer</div>
-              <div id="customerLabel" class="kvValue">—</div>
-            </div>
-            <div class="kvBlock" style="flex:0 0 auto">
-              <div class="kvLabel" style="text-align:right">Order ID</div>
-              <div id="orderIdLabel" class="kvValue right">—</div>
-            </div>
+          <div><b id="customerLabel"></b></div>
+          <div id="orderIdLabel" class="muted"></div>
+
+          <input id="carrier" placeholder="Carrier" />
+          <input id="trackingNumber" placeholder="Tracking number" />
+          <input id="trackingLink" placeholder="Tracking link" />
+
+          <div class="row" style="margin-top:10px">
+            <button id="saveBtn" class="btn primary">Save</button>
+            <button id="gmailDraftBtn" class="btn hidden">Mail customer</button>
+            <button id="appleMailDraftBtn" class="btn hidden">Apple Mail</button>
           </div>
 
-          <label>Carrier</label>
-          <input id="carrier" />
-
-          <label>Tracking number</label>
-          <input id="trackingNumber" />
-
-          <label>Tracking link</label>
-          <input id="trackingLink" />
-
-          <div class="row" style="margin-top:12px">
-            <button id="saveBtn" class="btn primary" type="button">Save</button>
-            <button id="gmailDraftBtn" class="btn hidden" type="button">Gmail draft</button>
-            <button id="appleMailDraftBtn" class="btn hidden" type="button">Apple Mail draft</button>
-          </div>
-
-          <div class="hint" id="msg"></div>
+          <div id="msg" class="muted"></div>
         </div>
       </section>
 
-      <section class="card">
+      <!-- RIGHT -->
+      <section class="card" style="flex:1">
         <table class="table">
           <thead>
             <tr>
               <th>Customer</th>
-              <th class="right" style="width:170px">Status</th>
-              <th class="right" style="width:240px">Action</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="tbody">
@@ -188,514 +94,133 @@
           </tbody>
         </table>
       </section>
+
     </div>
   </div>
 </section>
 
 <script>
-const API_BASE = "https://script.google.com/macros/s/AKfycbwCkPxEKnnk_Jj_5tceaHlCgtkoZMpiZ4n235buFCw-X_85KabR_oMjv6rcGRTTPHWkSQ/exec";
-const MASTER_SUPPLIER_NAME = "ALL";
+const API_BASE="https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec";
+const MASTER="ALL";
+const $=id=>document.getElementById(id);
 
-const $ = (id) => document.getElementById(id);
+let supplier="",supplierKey="",orders=[],selected=null;
 
-const loginView = $("loginView");
-const portalView = $("portalView");
-
-const keyInput = $("keyInput");
-const loginBtn = $("loginBtn");
-const clearBtn = $("clearBtn");
-const loginMsg = $("loginMsg");
-
-const reloadBtn = $("reloadBtn");
-const logoutBtn = $("logoutBtn");
-
-const addToggleBtn = $("addToggleBtn");
-const createPanel = $("createPanel");
-const addCloseBtn = $("addCloseBtn");
-const newCustomer = $("newCustomer");
-const newMailCustomer = $("newMailCustomer");
-const newSupplier = $("newSupplier");
-const newOrderId = $("newOrderId");
-const createBtn = $("createBtn");
-const createMsg = $("createMsg");
-
-const tbody = $("tbody");
-const statusBadge = $("statusBadge");
-const statusText = $("statusText");
-const noSelection = $("noSelection");
-const form = $("form");
-const customerLabel = $("customerLabel");
-const orderIdLabel = $("orderIdLabel");
-
-const carrier = $("carrier");
-const trackingNumber = $("trackingNumber");
-const trackingLink = $("trackingLink");
-const saveBtn = $("saveBtn");
-const gmailDraftBtn = $("gmailDraftBtn");
-const appleMailDraftBtn = $("appleMailDraftBtn");
-const msg = $("msg");
-
-let supplier = "";
-let supplierKey = "";
-let orders = [];
-let selected = null;
-
-function isMasterLogin(){
-  return String(supplier || "").trim().toLowerCase() === String(MASTER_SUPPLIER_NAME).toLowerCase();
-}
-
-function escapeHTML(s){
-  return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
-}
-
-function isComplete(o){
-  return !!(o.Carrier && o.Trackingnumber && o.Trackinglink);
-}
-
-function setStatus(text, ok){
-  statusBadge.classList.remove("ready","missing");
-  statusBadge.classList.add(ok ? "ready" : "missing");
-  statusText.textContent = text;
-}
-
-function showLogin(){
-  portalView.classList.add("hidden");
-  loginView.classList.remove("hidden");
-  loginMsg.textContent = "";
-  keyInput.value = "";
-  setTimeout(()=> keyInput.focus(), 50);
-}
-
-function showPortal(){
-  loginView.classList.add("hidden");
-  portalView.classList.remove("hidden");
-}
+function isMaster(){return supplier.toLowerCase()===MASTER.toLowerCase();}
+function escape(s){return String(s||"");}
 
 function jsonp(url){
-  return new Promise((resolve, reject) => {
-    const cb = "cb_" + Math.random().toString(36).slice(2);
-    const script = document.createElement("script");
-
-    window[cb] = (data) => {
-      try { delete window[cb]; } catch(_) {}
-      script.remove();
-      resolve(data);
-    };
-
-    script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb;
-    script.onerror = () => {
-      try { delete window[cb]; } catch(_) {}
-      script.remove();
-      reject(new Error("JSONP failed"));
-    };
-
-    document.head.appendChild(script);
+  return new Promise((res,rej)=>{
+    const cb="cb"+Math.random().toString(36).slice(2);
+    window[cb]=d=>{delete window[cb];res(d);}
+    const s=document.createElement("script");
+    s.src=url+"&callback="+cb;
+    s.onerror=()=>rej();
+    document.head.appendChild(s);
   });
 }
 
-function updateMasterUI(){
-  const master = isMasterLogin();
-  const hasSelection = !!selected;
-
-  addToggleBtn.classList.toggle("hidden", !master);
-
-  gmailDraftBtn.classList.toggle("hidden", !(master && hasSelection));
-  appleMailDraftBtn.classList.toggle("hidden", !(master && hasSelection));
-
-  if (!master) createPanel.classList.add("hidden");
+function pick(o,keys){
+  for(const k of keys){if(o[k])return String(o[k]).trim();}
+  return "";
 }
 
-function toggleCreatePanel(forceOpen){
-  if (!isMasterLogin()) return;
-  if (typeof forceOpen === "boolean") createPanel.classList.toggle("hidden", !forceOpen);
-  else createPanel.classList.toggle("hidden");
-  createMsg.textContent = "";
-  if (!createPanel.classList.contains("hidden")) setTimeout(()=> newCustomer.focus(), 20);
+/* LOGIN */
+$("loginBtn").onclick=async()=>{
+  const k=$("keyInput").value.trim();
+  if(!k)return;
+  const d=await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(k)}`);
+  if(!d.ok)return $("loginMsg").textContent="Invalid password";
+  supplierKey=k;supplier=d.supplier;
+  $("loginView").classList.add("hidden");
+  $("portalView").classList.remove("hidden");
+  loadOrders();
+};
+
+$("clearBtn").onclick=()=>{$("keyInput").value="";$("loginMsg").textContent="";};
+
+/* LOAD */
+async function loadOrders(){
+  const url=isMaster()
+    ?`${API_BASE}?action=orders&supplier=ALL&supplierKey=${supplierKey}`
+    :`${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
+  const d=await jsonp(url);
+  orders=d.orders||[];
+  render();
 }
 
-function getDraftData(){
-  if(!selected) return null;
-
-  const to = String(selected.MailCustomer || selected.Mailadress || "").trim();
-
-  const Customer = (selected.Customer || "").trim();
-  const OrderID = (selected.OrderID || "").trim();
-
-  const Carrier = (carrier.value || selected.Carrier || "").trim();
-  const Trackingnumber = (trackingNumber.value || selected.Trackingnumber || "").trim();
-  const Trackinglink = (trackingLink.value || selected.Trackinglink || "").trim();
-
-  const subject = `Tracking details – Order ${OrderID || "(no order id)"}`;
-
-  const body =
-`Hi ${Customer || "there"},
-
-Here are your shipment details:
-
-Order ID: ${OrderID || "-"}
-Carrier: ${Carrier || "-"}
-Tracking number: ${Trackingnumber || "-"}
-Tracking link: ${Trackinglink || "-"}
-
-Kind regards`;
-
-  return { to, subject, body };
-}
-
-function openGmailDraft(){
-  if (!isMasterLogin() || !selected) return;
-  const d = getDraftData();
-  if (!d) return;
-
-  if(!d.to){
-    msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
-    return;
+function render(){
+  const tb=$("tbody");tb.innerHTML="";
+  for(const o of orders){
+    const ok=o.Carrier&&o.Trackingnumber&&o.Trackinglink;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>
+        <b>${escape(o.Customer)}</b>
+        ${isMaster()?`<div class="muted">${escape(o.Supplier)}</div>`:""}
+      </td>
+      <td><span class="status ${ok?"ready":""}"><span class="dot"></span>${ok?"Complete":"Missing"}</span></td>
+      <td>
+        <button class="btn" onclick="openRow(${o.rowId})">Open</button>
+        ${isMaster()?`<button class="btn" onclick="mailSupplier(${o.rowId})">Mail supplier</button>`:""}
+      </td>`;
+    tb.appendChild(tr);
   }
-
-  const url =
-    "https://mail.google.com/mail/?view=cm&fs=1" +
-    `&to=${encodeURIComponent(d.to)}` +
-    `&su=${encodeURIComponent(d.subject)}` +
-    `&body=${encodeURIComponent(d.body)}`;
-
-  window.open(url, "_blank", "noopener,noreferrer");
 }
 
-function openAppleMailDraft(){
-  if (!isMasterLogin() || !selected) return;
-  const d = getDraftData();
-  if (!d) return;
+window.openRow=id=>{
+  selected=orders.find(o=>o.rowId==id);
+  $("customerLabel").textContent=selected.Customer;
+  $("orderIdLabel").textContent=selected.OrderID||"";
+  $("carrier").value=selected.Carrier||"";
+  $("trackingNumber").value=selected.Trackingnumber||"";
+  $("trackingLink").value=selected.Trackinglink||"";
+  $("form").classList.remove("hidden");
+  $("noSelection").classList.add("hidden");
+  $("gmailDraftBtn").classList.toggle("hidden",!isMaster());
+  $("appleMailDraftBtn").classList.toggle("hidden",!isMaster());
+};
 
-  if(!d.to){
-    msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
-    return;
-  }
+/* MAIL CUSTOMER */
+function draftCustomer(useGmail){
+  const to=pick(selected,["MailCustomer","Mail"]);
+  if(!to)return alert("No customer email");
+  const subject=`Tracking details – Order ${selected.OrderID||""}`;
+  const body=`Hi ${selected.Customer},
 
-  const url =
-    "mailto:" + encodeURIComponent(d.to) +
-    `?subject=${encodeURIComponent(d.subject)}` +
-    `&body=${encodeURIComponent(d.body)}`;
-
-  window.location.href = url;
+Carrier: ${selected.Carrier||""}
+Tracking number: ${selected.Trackingnumber||""}
+Tracking link: ${selected.Trackinglink||""}`;
+  const url=useGmail
+    ?`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    :`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(url,"_blank");
 }
 
-/* ✅ mail supplier asking for tracking input */
-function mailSupplierFromRow(rowId){
-  if (!isMasterLogin()) return;
+$("gmailDraftBtn").onclick=()=>draftCustomer(true);
+$("appleMailDraftBtn").onclick=()=>draftCustomer(false);
 
-  const o = orders.find(x => Number(x.rowId) === rowId);
-  if (!o) return;
+/* MAIL SUPPLIER */
+window.mailSupplier=id=>{
+  const o=orders.find(x=>x.rowId==id);
+  const to=pick(o,["MailSupplier"]);
+  if(!to)return alert("No supplier email");
+  const subject=`Tracking needed – Order ${o.OrderID||""}`;
+  const body=`Hi ${o.Supplier},
 
-  const to = String(o.MailSupplier || "").trim(); // requires Apps Script to send MailSupplier for master
-  const supplierName = String(o.Supplier || "").trim();
-  const customerName = String(o.Customer || "").trim();
-  const orderId = String(o.OrderID || "").trim();
-
-  if (!to) {
-    alert("No supplier email found for this row (Mail Supplier).");
-    return;
-  }
-
-  const subject = `Tracking needed – Order ${orderId || ""}`.trim();
-
-  const body =
-`Hi ${supplierName || "there"},
-
-Could you please provide the shipment details for the order below?
-
-Customer: ${customerName || "-"}
-Order ID: ${orderId || "-"}
-
-Please reply with:
+Please provide:
 - Carrier
 - Tracking number
-- Tracking link
+- Tracking link`;
+  window.open(
+    `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+    "_blank"
+  );
+};
 
-Thank you!`;
-
-  const gmailUrl =
-    "https://mail.google.com/mail/?view=cm&fs=1" +
-    `&to=${encodeURIComponent(to)}` +
-    `&su=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(body)}`;
-
-  const w = window.open(gmailUrl, "_blank", "noopener,noreferrer");
-  if (!w) {
-    const mailto =
-      "mailto:" + encodeURIComponent(to) +
-      `?subject=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-  }
-}
-
-async function createOrder(){
-  if (!isMasterLogin()) return;
-
-  const Customer = newCustomer.value.trim();
-  const MailCustomer = newMailCustomer.value.trim();
-  const Supplier = newSupplier.value.trim();
-  const OrderID = newOrderId.value.trim();
-
-  if (!Customer || !MailCustomer || !Supplier || !OrderID) {
-    createMsg.innerHTML = "<span style='color:var(--warn)'>Please fill in all 4 fields.</span>";
-    return;
-  }
-
-  createBtn.disabled = true;
-  createMsg.textContent = "Creating…";
-
-  try {
-    const url =
-      `${API_BASE}?action=create` +
-      `&supplierKey=${encodeURIComponent(supplierKey)}` +
-      `&Customer=${encodeURIComponent(Customer)}` +
-      `&MailCustomer=${encodeURIComponent(MailCustomer)}` +
-      `&Supplier=${encodeURIComponent(Supplier)}` +
-      `&OrderID=${encodeURIComponent(OrderID)}`;
-
-    const data = await jsonp(url);
-
-    if (data && data.ok) {
-      createMsg.innerHTML = "<span style='color:var(--ok)'>Created ✓</span>";
-      newCustomer.value = "";
-      newMailCustomer.value = "";
-      newSupplier.value = "Kubus Sports";
-      newOrderId.value = "";
-      await loadOrders();
-      toggleCreatePanel(false);
-    } else {
-      createMsg.innerHTML = `<span style='color:var(--bad)'>Create failed${data && data.error ? ": " + escapeHTML(data.error) : "."}</span>`;
-    }
-  } catch (e) {
-    createMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
-  } finally {
-    createBtn.disabled = false;
-  }
-}
-
-async function doLogin(){
-  const key = keyInput.value.trim();
-  if(!key){
-    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter password.</span>";
-    return;
-  }
-
-  loginBtn.disabled = true;
-  loginMsg.textContent = "Checking…";
-
-  try{
-    const url = `${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`;
-    const data = await jsonp(url);
-
-    if(!data || !data.ok || !data.supplier){
-      loginMsg.innerHTML =
-        `<span style='color:var(--bad)'>Login failed.</span><br>` +
-        `<span class='muted'>Response: ${escapeHTML(JSON.stringify(data))}</span>`;
-      return;
-    }
-
-    supplierKey = key;
-    supplier = String(data.supplier).trim();
-
-    sessionStorage.setItem("supplier_key", supplierKey);
-    sessionStorage.setItem("supplier_name", supplier);
-
-    showPortal();
-    await loadOrders();
-  }catch(e){
-    loginMsg.innerHTML =
-      `<span style='color:var(--bad)'>Could not reach server.</span><br>` +
-      `<span class='muted'>${escapeHTML(String(e && e.message ? e.message : e))}</span>`;
-  }finally{
-    loginBtn.disabled = false;
-  }
-}
-
-async function loadOrders(){
-  selected = null;
-  form.classList.add("hidden");
-  noSelection.classList.remove("hidden");
-  customerLabel.textContent = "—";
-  orderIdLabel.textContent = "—";
-  setStatus("No selection", false);
-  msg.textContent = "";
-
-  tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
-
-  try{
-    const url = isMasterLogin()
-      ? `${API_BASE}?action=orders&supplier=ALL`
-      : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
-
-    const data = await jsonp(url);
-
-    if(!data || !data.ok){
-      tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
-      updateMasterUI();
-      return;
-    }
-
-    orders = data.orders || [];
-    renderOrders();
-    updateMasterUI();
-  }catch(e){
-    tbody.innerHTML = `<tr><td colspan="3" class="muted">Could not reach server.</td></tr>`;
-    updateMasterUI();
-  }
-}
-
-function renderOrders(){
-  if(!orders.length){
-    tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
-    return;
-  }
-
-  const master = isMasterLogin();
-  tbody.innerHTML = "";
-
-  for(const o of orders){
-    const ok = isComplete(o);
-
-    // ✅ supplier shown small under customer (master only)
-    const supplierLine = master && o.Supplier
-      ? `<div class="muted" style="margin-top:3px;font-size:12px">${escapeHTML(o.Supplier)}</div>`
-      : "";
-
-    const actionBtns = master
-      ? `
-        <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-        <button class="btn" data-mail-supplier="${escapeHTML(o.rowId)}">Mail supplier</button>
-      `
-      : `<button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>`;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
-        ${supplierLine}
-      </td>
-      <td class="right">
-        <span class="status ${ok ? "ready":"missing"}">
-          <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
-        </span>
-      </td>
-      <td class="right" style="white-space:nowrap">${actionBtns}</td>
-    `;
-    tbody.appendChild(tr);
-  }
-
-  tbody.querySelectorAll("button[data-open]").forEach(btn=>{
-    btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
-  });
-
-  tbody.querySelectorAll("button[data-mail-supplier]").forEach(btn=>{
-    btn.addEventListener("click", ()=> mailSupplierFromRow(Number(btn.dataset.mailSupplier)));
-  });
-}
-
-function openRow(rowId){
-  selected = orders.find(x => Number(x.rowId) === rowId);
-  if(!selected) return;
-
-  customerLabel.textContent = selected.Customer || "—";
-  orderIdLabel.textContent = String(selected.OrderID || "—");
-
-  carrier.value = selected.Carrier || "";
-  trackingNumber.value = selected.Trackingnumber || "";
-  trackingLink.value = selected.Trackinglink || "";
-
-  noSelection.classList.add("hidden");
-  form.classList.remove("hidden");
-  msg.textContent = "";
-
-  const ok = isComplete(selected);
-  setStatus(ok ? "Complete" : "Missing tracking", ok);
-
-  updateMasterUI();
-}
-
-async function save(){
-  if(!selected) return;
-
-  const Carrier = carrier.value.trim();
-  const Trackingnumber = trackingNumber.value.trim();
-  const Trackinglink = trackingLink.value.trim();
-
-  if(!Carrier || !Trackingnumber || !Trackinglink){
-    msg.innerHTML = "<span style='color:var(--warn)'>Please fill in all fields.</span>";
-    return;
-  }
-
-  saveBtn.disabled = true;
-  msg.textContent = "Saving…";
-
-  try{
-    const url =
-      `${API_BASE}?action=update` +
-      `&rowId=${encodeURIComponent(selected.rowId)}` +
-      `&supplier=${encodeURIComponent(supplier)}` +
-      `&supplierKey=${encodeURIComponent(supplierKey)}` +
-      `&Carrier=${encodeURIComponent(Carrier)}` +
-      `&Trackingnumber=${encodeURIComponent(Trackingnumber)}` +
-      `&Trackinglink=${encodeURIComponent(Trackinglink)}`;
-
-    const data = await jsonp(url);
-
-    if(data && data.ok){
-      selected.Carrier = Carrier;
-      selected.Trackingnumber = Trackingnumber;
-      selected.Trackinglink = Trackinglink;
-      renderOrders();
-      setStatus("Complete", true);
-      msg.innerHTML = "<span style='color:var(--ok)'>Saved ✓</span>";
-    } else {
-      msg.innerHTML = "<span style='color:var(--bad)'>Save failed.</span>";
-    }
-  }catch(e){
-    msg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
-  }finally{
-    saveBtn.disabled = false;
-  }
-}
-
-function logout(){
-  supplier = "";
-  supplierKey = "";
-  orders = [];
-  selected = null;
-  sessionStorage.removeItem("supplier_key");
-  sessionStorage.removeItem("supplier_name");
-  showLogin();
-}
-
-loginBtn.addEventListener("click", doLogin);
-clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
-keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
-
-reloadBtn.addEventListener("click", loadOrders);
-logoutBtn.addEventListener("click", logout);
-saveBtn.addEventListener("click", save);
-
-gmailDraftBtn.addEventListener("click", openGmailDraft);
-appleMailDraftBtn.addEventListener("click", openAppleMailDraft);
-
-addToggleBtn.addEventListener("click", ()=> toggleCreatePanel());
-addCloseBtn.addEventListener("click", ()=> toggleCreatePanel(false));
-createBtn.addEventListener("click", createOrder);
-
-(function init(){
-  const k = sessionStorage.getItem("supplier_key") || "";
-  const s = sessionStorage.getItem("supplier_name") || "";
-  if(k && s){
-    supplierKey = k;
-    supplier = s;
-    showPortal();
-    loadOrders();
-  } else {
-    showLogin();
-  }
-})();
+$("reloadBtn").onclick=loadOrders;
+$("logoutBtn").onclick=()=>location.reload();
 </script>
+
 </body>
 </html>
