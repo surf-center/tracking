@@ -35,10 +35,7 @@
     .two{display:grid;grid-template-columns: 420px 1fr;gap:14px}
     @media (max-width: 980px){.two{grid-template-columns:1fr}}
     .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
-
-    /* views */
     .center{min-height:100vh;display:grid;place-items:center}
-    .login-card{width:min(520px, calc(100vw - 28px))}
     .hidden{display:none !important}
     code{background:#0d1429;border:1px solid rgba(34,49,88,.8);padding:2px 6px;border-radius:8px;color:var(--text)}
   </style>
@@ -47,10 +44,10 @@
 
 <!-- LOGIN VIEW -->
 <section id="loginView" class="center">
-  <div class="card login-card">
+  <div class="card" style="max-width:520px;width:100%">
     <h1>Supplier Portal – Login</h1>
     <div class="sub" style="margin-top:6px">
-      Enter your <strong>Supplier KEY</strong> to access your orders. Supplier is not shown in this portal.
+      Enter your <strong>Supplier KEY</strong> to access your orders.
     </div>
 
     <label for="keyInput" style="margin-top:14px">Supplier KEY</label>
@@ -63,8 +60,8 @@
 
     <div id="loginMsg" class="hint"></div>
 
-    <div class="hint">
-      Admin note: set <code>API_BASE</code> in the script below (Google Apps Script Web App URL).
+    <div class="hint muted">
+      Tip: Keys are stored in Google Sheet column <code>Supplier KEY</code>.
     </div>
   </div>
 </section>
@@ -138,19 +135,8 @@
 </section>
 
 <script>
-/**
- * IMPORTANT:
- * Replace API_BASE with your Google Apps Script Web App URL.
- * Example: const API_BASE = "https://script.google.com/macros/s/AKfycbxxxx/exec";
- */
-const API_BASE = "PASTE_YOUR_WEB_APP_URL_HERE";
-
-/**
- * Required backend endpoints (Apps Script):
- * - POST  ?action=auth   body: { key }                -> { ok:true, supplier:"Prolimit" }
- * - GET   ?action=orders&supplier=Prolimit            -> { ok:true, orders:[{rowId, Customer, Carrier, Trackingnumber, Trackinglink}] }
- * - POST  ?action=update body: { rowId, supplier, key, Carrier, Trackingnumber, Trackinglink } -> { ok:true }
- */
+/* Your Apps Script Web App URL */
+const API_BASE = "https://script.google.com/macros/s/AKfycbzECvKYF1JLchfpJKzHvWn86c4SHdLAeCfnu-n7Upq-BilFoK-LdrleDvolOJb9G4j9Og/exec";
 
 const $ = (id) => document.getElementById(id);
 
@@ -210,26 +196,25 @@ function showPortal(){
   portalView.classList.remove("hidden");
 }
 
-async function authWithKey(key){
-  const res = await fetch(`${API_BASE}?action=auth`, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ key })
-  });
-  return await res.json().catch(()=> ({}));
-}
-
 async function doLogin(){
   const key = keyInput.value.trim();
   if(!key){
     loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter your Supplier KEY.</span>";
     return;
   }
+
   loginBtn.disabled = true;
   loginMsg.textContent = "Checking…";
 
   try{
-    const data = await authWithKey(key);
+    const res = await fetch(`${API_BASE}?action=auth`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ supplierKey: key })
+    });
+
+    const data = await res.json().catch(()=> ({}));
+
     if(!data.ok || !data.supplier){
       loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid key.</span>";
       loginBtn.disabled = false;
@@ -239,7 +224,6 @@ async function doLogin(){
     supplierKey = key;
     supplier = String(data.supplier).trim();
 
-    // persist for refresh
     sessionStorage.setItem("supplier_key", supplierKey);
     sessionStorage.setItem("supplier_name", supplier);
 
@@ -260,14 +244,17 @@ async function loadOrders(){
   rowLabel.textContent = "—";
   setStatus("No selection", false);
   msg.textContent = "";
+
   tbody.innerHTML = "<tr><td colspan='4' class='muted'>Loading…</td></tr>";
 
   const res = await fetch(`${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`, { cache:"no-store" });
   const data = await res.json().catch(()=> ({}));
+
   if(!data.ok){
     tbody.innerHTML = `<tr><td colspan="4" class="muted">${escapeHTML(data.error || "Error")}</td></tr>`;
     return;
   }
+
   orders = data.orders || [];
   renderOrders();
 }
@@ -307,7 +294,6 @@ function openRow(rowId){
   rowLabel.textContent = String(selected.rowId);
   customerLabel.textContent = selected.Customer || "—";
 
-  // No dummy prefills; only values from the sheet (can be empty)
   carrier.value = selected.Carrier || "";
   trackingNumber.value = selected.Trackingnumber || "";
   trackingLink.value = selected.Trackinglink || "";
@@ -325,8 +311,8 @@ async function save(){
 
   const payload = {
     rowId: selected.rowId,
-    supplier,
-    key: supplierKey,
+    supplier: supplier,
+    supplierKey: supplierKey,
     Carrier: carrier.value.trim(),
     Trackingnumber: trackingNumber.value.trim(),
     Trackinglink: trackingLink.value.trim(),
@@ -351,6 +337,7 @@ async function save(){
     selected.Carrier = payload.Carrier;
     selected.Trackingnumber = payload.Trackingnumber;
     selected.Trackinglink = payload.Trackinglink;
+
     renderOrders();
     setStatus("Complete", true);
     msg.innerHTML = "<span style='color:var(--ok)'>Saved ✓</span>";
@@ -371,7 +358,6 @@ function logout(){
   showLogin();
 }
 
-// events
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
@@ -380,7 +366,6 @@ reloadBtn.addEventListener("click", loadOrders);
 logoutBtn.addEventListener("click", logout);
 saveBtn.addEventListener("click", save);
 
-// init: try restore session
 (function init(){
   const k = sessionStorage.getItem("supplier_key") || "";
   const s = sessionStorage.getItem("supplier_name") || "";
