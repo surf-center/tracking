@@ -50,7 +50,7 @@
     .loginActions{justify-content:center}
     .loginMsg{text-align:center;min-height:18px}
 
-    /* small supplier line under customer (admin only) */
+    /* supplier small line under customer (master only) */
     .supplierSmall{margin-top:3px;font-size:12px}
   </style>
 </head>
@@ -118,17 +118,15 @@
           <label>Tracking link</label>
           <input id="trackingLink" />
 
+          <!-- ✅ buttons together -->
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
             <button id="mailCustomerBtn" class="btn hidden" type="button">Mail customer</button>
-            <button id="mailCustomerAppleBtn" class="btn hidden" type="button">Apple Mail</button>
+            <button id="mailSupplierBtn" class="btn hidden" type="button">Mail supplier</button>
+            <button id="appleMailBtn" class="btn hidden" type="button">Apple Mail</button>
           </div>
 
           <div class="hint" id="msg"></div>
-
-          <div class="row" style="margin-top:10px">
-            <button id="mailSupplierBtn" class="btn hidden" type="button">Mail supplier (ask tracking)</button>
-          </div>
         </div>
       </section>
 
@@ -138,7 +136,7 @@
             <tr>
               <th>Customer</th>
               <th style="width:170px">Status</th>
-              <th style="width:240px">Action</th>
+              <th style="width:140px">Action</th>
             </tr>
           </thead>
           <tbody id="tbody">
@@ -181,8 +179,8 @@ const trackingLink = $("trackingLink");
 
 const saveBtn = $("saveBtn");
 const mailCustomerBtn = $("mailCustomerBtn");
-const mailCustomerAppleBtn = $("mailCustomerAppleBtn");
 const mailSupplierBtn = $("mailSupplierBtn");
+const appleMailBtn = $("appleMailBtn");
 const msg = $("msg");
 
 let supplier = "";
@@ -215,7 +213,6 @@ function showPortal(){
   loginView.classList.add("hidden");
   portalView.classList.remove("hidden");
 }
-
 function jsonp(url){
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2);
@@ -238,20 +235,14 @@ function jsonp(url){
   });
 }
 
-/* ---------- Robust key lookup (case + spaces tolerant) ---------- */
+/* ✅ tolerant key lookup: handles "Mail Supplier" exactly + other variants */
 function normalizeKey(k){
-  return String(k || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[_-]+/g, " ");
+  return String(k || "").trim().toLowerCase().replace(/\s+/g," ");
 }
 function getAny(obj, wantedKeys){
   if(!obj) return "";
   const map = {};
-  for (const k of Object.keys(obj)){
-    map[normalizeKey(k)] = k;
-  }
+  for (const k of Object.keys(obj)) map[normalizeKey(k)] = k;
   for (const want of wantedKeys){
     const hit = map[normalizeKey(want)];
     if(hit){
@@ -263,23 +254,23 @@ function getAny(obj, wantedKeys){
 }
 
 function openGmailOrMailto(to, subject, body){
-  const gmail =
+  const gmailUrl =
     "https://mail.google.com/mail/?view=cm&fs=1" +
     `&to=${encodeURIComponent(to)}` +
     `&su=${encodeURIComponent(subject)}` +
     `&body=${encodeURIComponent(body)}`;
 
-  const w = window.open(gmail, "_blank", "noopener,noreferrer");
+  const w = window.open(gmailUrl, "_blank", "noopener,noreferrer");
   if (!w) {
-    const mailto =
+    const mailtoUrl =
       "mailto:" + encodeURIComponent(to) +
       `?subject=${encodeURIComponent(subject)}` +
       `&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+    window.location.href = mailtoUrl;
   }
 }
 
-/* ---------- Login ---------- */
+/* ---- Login ---- */
 async function doLogin(){
   const key = keyInput.value.trim();
   if(!key){
@@ -313,7 +304,7 @@ async function doLogin(){
   }
 }
 
-/* ---------- Load / Render ---------- */
+/* ---- Load / render ---- */
 async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
@@ -326,7 +317,7 @@ async function loadOrders(){
   tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
   const url = isMasterLogin()
-    ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}` /* important */
+    ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}`
     : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
 
   const data = await jsonp(url);
@@ -351,8 +342,8 @@ function renderOrders(){
 
   for(const o of orders){
     const ok = isComplete(o);
-
     const supplierName = getAny(o, ["Supplier"]);
+
     const supplierLine = master && supplierName
       ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
       : "";
@@ -385,7 +376,7 @@ function openRow(rowId){
   if(!selected) return;
 
   customerLabel.textContent = getAny(selected, ["Customer"]) || "—";
-  orderIdLabel.textContent = getAny(selected, ["OrderID","Order ID"]) || "—";
+  orderIdLabel.textContent = getAny(selected, ["Order ID","OrderID"]) || "—";
 
   carrier.value = getAny(selected, ["Carrier"]) || "";
   trackingNumber.value = getAny(selected, ["Trackingnumber","Tracking Number"]) || "";
@@ -398,14 +389,13 @@ function openRow(rowId){
   const ok = isComplete(selected);
   setStatus(ok ? "Complete" : "Missing tracking", ok);
 
-  // show mail buttons only for master
   const master = isMasterLogin();
   mailCustomerBtn.classList.toggle("hidden", !master);
-  mailCustomerAppleBtn.classList.toggle("hidden", !master);
   mailSupplierBtn.classList.toggle("hidden", !master);
+  appleMailBtn.classList.toggle("hidden", !master);
 }
 
-/* ---------- Save ---------- */
+/* ---- Save ---- */
 async function save(){
   if(!selected) return;
 
@@ -450,30 +440,33 @@ async function save(){
   }
 }
 
-/* ---------- Mail customer ---------- */
+/* ---- Mail customer (uses "Mail Customer" from sheet) ---- */
 function mailCustomer(useApple){
   if(!isMasterLogin() || !selected) return;
 
-  const to = getAny(selected, ["Mail Customer","MailCustomer","Mailadress","Mail"]);
+  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
+  const customerName = getAny(selected, ["Customer"]);
+  const orderId = getAny(selected, ["Order ID","OrderID"]);
+
+  // debug
+  msg.innerHTML = `<span class="muted">Mail customer to: ${escapeHTML(to || "(not found)")}</span>`;
+
   if(!to){
     msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
     return;
   }
 
-  const Customer = getAny(selected, ["Customer"]);
-  const OrderID = getAny(selected, ["OrderID","Order ID"]);
-
   const Carrier = carrier.value.trim() || getAny(selected, ["Carrier"]);
   const Trackingnumber = trackingNumber.value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]);
   const Trackinglink = trackingLink.value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]);
 
-  const subject = `Tracking details – Order ${OrderID || ""}`.trim();
+  const subject = `Tracking details – Order ${orderId || ""}`.trim();
   const body =
-`Hi ${Customer || "there"},
+`Hi ${customerName || "there"},
 
 Here are your shipment details:
 
-Order ID: ${OrderID || "-"}
+Order ID: ${orderId || "-"}
 Carrier: ${Carrier || "-"}
 Tracking number: ${Trackingnumber || "-"}
 Tracking link: ${Trackinglink || "-"}
@@ -481,29 +474,32 @@ Tracking link: ${Trackinglink || "-"}
 Kind regards`;
 
   if(useApple){
-    const mailto =
+    const mailtoUrl =
       "mailto:" + encodeURIComponent(to) +
       `?subject=${encodeURIComponent(subject)}` +
       `&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
+    window.location.href = mailtoUrl;
   } else {
     openGmailOrMailto(to, subject, body);
   }
 }
 
-/* ---------- Mail supplier (ask tracking) ---------- */
+/* ---- Mail supplier (uses "Mail Supplier" from sheet) ---- */
 function mailSupplier(){
   if(!isMasterLogin() || !selected) return;
 
   const to = getAny(selected, ["Mail Supplier","MailSupplier"]);
+  const supplierName = getAny(selected, ["Supplier"]);
+  const customerName = getAny(selected, ["Customer"]);
+  const orderId = getAny(selected, ["Order ID","OrderID"]);
+
+  // debug
+  msg.innerHTML = `<span class="muted">Mail supplier to: ${escapeHTML(to || "(not found)")}</span>`;
+
   if(!to){
     msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found for this row (Mail Supplier).</span>";
     return;
   }
-
-  const supplierName = getAny(selected, ["Supplier"]);
-  const customerName = getAny(selected, ["Customer"]);
-  const orderId = getAny(selected, ["OrderID","Order ID"]);
 
   const subject = `Tracking needed – Order ${orderId || ""}`.trim();
   const body =
@@ -524,7 +520,7 @@ Thank you!`;
   openGmailOrMailto(to, subject, body);
 }
 
-/* ---------- Logout ---------- */
+/* ---- Logout ---- */
 function logout(){
   supplier = "";
   supplierKey = "";
@@ -535,7 +531,7 @@ function logout(){
   showLogin();
 }
 
-/* ---------- Events ---------- */
+/* ---- Events ---- */
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
@@ -545,7 +541,7 @@ logoutBtn.addEventListener("click", logout);
 saveBtn.addEventListener("click", save);
 
 mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
-mailCustomerAppleBtn.addEventListener("click", ()=> mailCustomer(true));
+appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
 mailSupplierBtn.addEventListener("click", mailSupplier);
 
 (function init(){
