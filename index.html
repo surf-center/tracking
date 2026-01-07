@@ -43,12 +43,15 @@
     .kvValue{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .kvValue.right{text-align:right}
 
-    /* Login UX */
+    /* login UX */
     .loginCard{max-width:520px;width:100%;padding:18px}
     .loginHeader{text-align:center;margin-bottom:10px}
     .loginForm{max-width:380px;margin:0 auto}
     .loginActions{justify-content:center}
     .loginMsg{text-align:center;min-height:18px}
+
+    /* small supplier line under customer (admin only) */
+    .supplierSmall{margin-top:3px;font-size:12px}
   </style>
 </head>
 <body>
@@ -122,6 +125,10 @@
           </div>
 
           <div class="hint" id="msg"></div>
+
+          <div class="row" style="margin-top:10px">
+            <button id="mailSupplierBtn" class="btn hidden" type="button">Mail supplier (ask tracking)</button>
+          </div>
         </div>
       </section>
 
@@ -165,14 +172,17 @@ const statusBadge = $("statusBadge");
 const statusText = $("statusText");
 const noSelection = $("noSelection");
 const form = $("form");
+
 const customerLabel = $("customerLabel");
 const orderIdLabel = $("orderIdLabel");
 const carrier = $("carrier");
 const trackingNumber = $("trackingNumber");
 const trackingLink = $("trackingLink");
+
 const saveBtn = $("saveBtn");
 const mailCustomerBtn = $("mailCustomerBtn");
 const mailCustomerAppleBtn = $("mailCustomerAppleBtn");
+const mailSupplierBtn = $("mailSupplierBtn");
 const msg = $("msg");
 
 let supplier = "";
@@ -205,6 +215,7 @@ function showPortal(){
   loginView.classList.add("hidden");
   portalView.classList.remove("hidden");
 }
+
 function jsonp(url){
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2);
@@ -227,11 +238,26 @@ function jsonp(url){
   });
 }
 
-/* ✅ robust getter for different key names */
-function pick(obj, keys){
-  for (const k of keys){
-    const v = obj && obj[k];
-    if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+/* ---------- Robust key lookup (case + spaces tolerant) ---------- */
+function normalizeKey(k){
+  return String(k || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[_-]+/g, " ");
+}
+function getAny(obj, wantedKeys){
+  if(!obj) return "";
+  const map = {};
+  for (const k of Object.keys(obj)){
+    map[normalizeKey(k)] = k;
+  }
+  for (const want of wantedKeys){
+    const hit = map[normalizeKey(want)];
+    if(hit){
+      const v = obj[hit];
+      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
   }
   return "";
 }
@@ -253,7 +279,7 @@ function openGmailOrMailto(to, subject, body){
   }
 }
 
-/* ==== LOGIN ==== */
+/* ---------- Login ---------- */
 async function doLogin(){
   const key = keyInput.value.trim();
   if(!key){
@@ -268,8 +294,7 @@ async function doLogin(){
     const data = await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`);
 
     if(!data || !data.ok || !data.supplier){
-      loginMsg.innerHTML =
-        `<span style='color:var(--bad)'>Invalid password.</span>`;
+      loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid password.</span>";
       return;
     }
 
@@ -288,7 +313,7 @@ async function doLogin(){
   }
 }
 
-/* ==== LOAD / RENDER ==== */
+/* ---------- Load / Render ---------- */
 async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
@@ -301,7 +326,7 @@ async function loadOrders(){
   tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
   const url = isMasterLogin()
-    ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}`  /* ✅ IMPORTANT */
+    ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}` /* important */
     : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
 
   const data = await jsonp(url);
@@ -327,21 +352,15 @@ function renderOrders(){
   for(const o of orders){
     const ok = isComplete(o);
 
-    const supplierLine = master && o.Supplier
-      ? `<div class="muted" style="margin-top:3px;font-size:12px">${escapeHTML(o.Supplier)}</div>`
+    const supplierName = getAny(o, ["Supplier"]);
+    const supplierLine = master && supplierName
+      ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
       : "";
-
-    const actionBtns = master
-      ? `
-        <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-        <button class="btn" data-mail-supplier="${escapeHTML(o.rowId)}">Mail supplier</button>
-      `
-      : `<button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>`;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
+        <div style="font-weight:600">${escapeHTML(getAny(o, ["Customer"]))}</div>
         ${supplierLine}
       </td>
       <td>
@@ -349,7 +368,9 @@ function renderOrders(){
           <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
         </span>
       </td>
-      <td style="white-space:nowrap">${actionBtns}</td>
+      <td style="white-space:nowrap">
+        <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+      </td>
     `;
     tbody.appendChild(tr);
   }
@@ -357,22 +378,18 @@ function renderOrders(){
   tbody.querySelectorAll("button[data-open]").forEach(btn=>{
     btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
   });
-
-  tbody.querySelectorAll("button[data-mail-supplier]").forEach(btn=>{
-    btn.addEventListener("click", ()=> mailSupplierFromRow(Number(btn.dataset.mailSupplier)));
-  });
 }
 
 function openRow(rowId){
   selected = orders.find(x => Number(x.rowId) === rowId);
   if(!selected) return;
 
-  customerLabel.textContent = selected.Customer || "—";
-  orderIdLabel.textContent = String(selected.OrderID || "—");
+  customerLabel.textContent = getAny(selected, ["Customer"]) || "—";
+  orderIdLabel.textContent = getAny(selected, ["OrderID","Order ID"]) || "—";
 
-  carrier.value = selected.Carrier || "";
-  trackingNumber.value = selected.Trackingnumber || "";
-  trackingLink.value = selected.Trackinglink || "";
+  carrier.value = getAny(selected, ["Carrier"]) || "";
+  trackingNumber.value = getAny(selected, ["Trackingnumber","Tracking Number"]) || "";
+  trackingLink.value = getAny(selected, ["Trackinglink","Tracking Link"]) || "";
 
   noSelection.classList.add("hidden");
   form.classList.remove("hidden");
@@ -381,12 +398,14 @@ function openRow(rowId){
   const ok = isComplete(selected);
   setStatus(ok ? "Complete" : "Missing tracking", ok);
 
-  // ✅ only show mail buttons for master
-  mailCustomerBtn.classList.toggle("hidden", !isMasterLogin());
-  mailCustomerAppleBtn.classList.toggle("hidden", !isMasterLogin());
+  // show mail buttons only for master
+  const master = isMasterLogin();
+  mailCustomerBtn.classList.toggle("hidden", !master);
+  mailCustomerAppleBtn.classList.toggle("hidden", !master);
+  mailSupplierBtn.classList.toggle("hidden", !master);
 }
 
-/* ==== SAVE ==== */
+/* ---------- Save ---------- */
 async function save(){
   if(!selected) return;
 
@@ -431,25 +450,24 @@ async function save(){
   }
 }
 
-/* ==== MAIL: CUSTOMER ==== */
-function mailCustomer(useAppleMail){
-  if (!isMasterLogin() || !selected) return;
+/* ---------- Mail customer ---------- */
+function mailCustomer(useApple){
+  if(!isMasterLogin() || !selected) return;
 
-  const to = pick(selected, ["MailCustomer", "Mail Customer", "Mailadress", "Mail", "mail"]);
-  if (!to){
+  const to = getAny(selected, ["Mail Customer","MailCustomer","Mailadress","Mail"]);
+  if(!to){
     msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
     return;
   }
 
-  const Customer = pick(selected, ["Customer"]);
-  const OrderID = pick(selected, ["OrderID", "Order ID"]);
+  const Customer = getAny(selected, ["Customer"]);
+  const OrderID = getAny(selected, ["OrderID","Order ID"]);
 
-  const Carrier = (carrier.value || pick(selected, ["Carrier"])).trim();
-  const Trackingnumber = (trackingNumber.value || pick(selected, ["Trackingnumber"])).trim();
-  const Trackinglink = (trackingLink.value || pick(selected, ["Trackinglink"])).trim();
+  const Carrier = carrier.value.trim() || getAny(selected, ["Carrier"]);
+  const Trackingnumber = trackingNumber.value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]);
+  const Trackinglink = trackingLink.value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]);
 
   const subject = `Tracking details – Order ${OrderID || ""}`.trim();
-
   const body =
 `Hi ${Customer || "there"},
 
@@ -462,37 +480,32 @@ Tracking link: ${Trackinglink || "-"}
 
 Kind regards`;
 
-  if (useAppleMail){
+  if(useApple){
     const mailto =
       "mailto:" + encodeURIComponent(to) +
       `?subject=${encodeURIComponent(subject)}` +
       `&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
-    return;
+  } else {
+    openGmailOrMailto(to, subject, body);
   }
-
-  openGmailOrMailto(to, subject, body);
 }
 
-/* ==== MAIL: SUPPLIER ==== */
-function mailSupplierFromRow(rowId){
-  if (!isMasterLogin()) return;
+/* ---------- Mail supplier (ask tracking) ---------- */
+function mailSupplier(){
+  if(!isMasterLogin() || !selected) return;
 
-  const o = orders.find(x => Number(x.rowId) === rowId);
-  if (!o) return;
-
-  const to = pick(o, ["MailSupplier", "Mail Supplier", "mailSupplier"]);
-  if (!to){
+  const to = getAny(selected, ["Mail Supplier","MailSupplier"]);
+  if(!to){
     msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found for this row (Mail Supplier).</span>";
     return;
   }
 
-  const supplierName = pick(o, ["Supplier"]);
-  const customerName = pick(o, ["Customer"]);
-  const orderId = pick(o, ["OrderID", "Order ID"]);
+  const supplierName = getAny(selected, ["Supplier"]);
+  const customerName = getAny(selected, ["Customer"]);
+  const orderId = getAny(selected, ["OrderID","Order ID"]);
 
   const subject = `Tracking needed – Order ${orderId || ""}`.trim();
-
   const body =
 `Hi ${supplierName || "there"},
 
@@ -511,7 +524,7 @@ Thank you!`;
   openGmailOrMailto(to, subject, body);
 }
 
-/* ==== LOGOUT ==== */
+/* ---------- Logout ---------- */
 function logout(){
   supplier = "";
   supplierKey = "";
@@ -522,7 +535,7 @@ function logout(){
   showLogin();
 }
 
-/* ==== EVENTS ==== */
+/* ---------- Events ---------- */
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
@@ -533,6 +546,7 @@ saveBtn.addEventListener("click", save);
 
 mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
 mailCustomerAppleBtn.addEventListener("click", ()=> mailCustomer(true));
+mailSupplierBtn.addEventListener("click", mailSupplier);
 
 (function init(){
   const k = sessionStorage.getItem("supplier_key") || "";
