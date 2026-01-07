@@ -107,6 +107,9 @@
 
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
+
+            <!-- ✅ MASTER ONLY: mail draft button -->
+            <button id="mailBtn" class="btn hidden" type="button">Create mail draft</button>
           </div>
 
           <div class="hint" id="msg"></div>
@@ -133,6 +136,7 @@
 
 <script>
 const API_BASE = "https://script.google.com/macros/s/AKfycbwCkPxEKnnk_Jj_5tceaHlCgtkoZMpiZ4n235buFCw-X_85KabR_oMjv6rcGRTTPHWkSQ/exec";
+const MASTER_SUPPLIER_NAME = "ALL"; // Apps Script returns supplier: "ALL" for master login
 
 const $ = (id) => document.getElementById(id);
 
@@ -158,12 +162,17 @@ const carrier = $("carrier");
 const trackingNumber = $("trackingNumber");
 const trackingLink = $("trackingLink");
 const saveBtn = $("saveBtn");
+const mailBtn = $("mailBtn");
 const msg = $("msg");
 
 let supplier = "";
 let supplierKey = "";
 let orders = [];
 let selected = null;
+
+function isMasterLogin(){
+  return String(supplier || "").trim().toLowerCase() === String(MASTER_SUPPLIER_NAME).toLowerCase();
+}
 
 function escapeHTML(s){
   return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
@@ -214,6 +223,57 @@ function jsonp(url){
   });
 }
 
+function updateMasterUI(){
+  // Only master sees mail button (and only when a row is open)
+  const master = isMasterLogin();
+  if (!master) {
+    mailBtn.classList.add("hidden");
+    return;
+  }
+  // master: show only if a selection exists
+  if (selected) mailBtn.classList.remove("hidden");
+  else mailBtn.classList.add("hidden");
+}
+
+function buildMailDraftLink(){
+  if(!selected) return "";
+
+  // Prefer supplier email if present (Apps Script should return MailSupplier for master list).
+  // Fallback: leave empty so user can fill.
+  const to = (selected.MailSupplier || "").trim();
+
+  const Customer = (selected.Customer || "").trim();
+  const OrderID = (selected.OrderID || "").trim();
+  const Supplier = (selected.Supplier || "").trim();
+  const Carrier = (carrier.value || selected.Carrier || "").trim();
+  const Trackingnumber = (trackingNumber.value || selected.Trackingnumber || "").trim();
+  const Trackinglink = (trackingLink.value || selected.Trackinglink || "").trim();
+
+  const subject = `Tracking details – Order ${OrderID || "(no order id)"}`;
+
+  const body =
+`Hi ${Supplier || "there"},
+
+Please find the shipment details below:
+
+Customer: ${Customer || "-"}
+Order ID: ${OrderID || "-"}
+Carrier: ${Carrier || "-"}
+Tracking number: ${Trackingnumber || "-"}
+Tracking link: ${Trackinglink || "-"}
+
+Thanks`;
+
+  // Gmail compose URL (works for most users). If they don't use Gmail, they can copy/paste.
+  const url =
+    "https://mail.google.com/mail/?view=cm&fs=1" +
+    `&to=${encodeURIComponent(to)}` +
+    `&su=${encodeURIComponent(subject)}` +
+    `&body=${encodeURIComponent(body)}`;
+
+  return url;
+}
+
 async function doLogin(){
   const key = keyInput.value.trim();
   if(!key){
@@ -255,6 +315,7 @@ async function loadOrders(){
   orderIdLabel.textContent = "—";
   setStatus("No selection", false);
   msg.textContent = "";
+  updateMasterUI();
 
   tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
@@ -275,6 +336,8 @@ function renderOrders(){
     return;
   }
 
+  const master = isMasterLogin();
+
   tbody.innerHTML = "";
   for(const o of orders){
     const ok = isComplete(o);
@@ -282,6 +345,7 @@ function renderOrders(){
     tr.innerHTML = `
       <td>
         <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
+        ${master && o.Supplier ? `<div class="muted" style="font-size:12px;margin-top:2px">Supplier: ${escapeHTML(o.Supplier)}</div>` : ""}
       </td>
       <td>
         <span class="status ${ok ? "ready":"missing"}">
@@ -303,7 +367,6 @@ function openRow(rowId){
   if(!selected) return;
 
   customerLabel.textContent = selected.Customer || "—";
-  // IMPORTANT: OrderID must come from the Google Sheet (Apps Script must return `OrderID`)
   orderIdLabel.textContent = String(selected.OrderID || "—");
 
   carrier.value = selected.Carrier || "";
@@ -316,6 +379,8 @@ function openRow(rowId){
 
   const ok = isComplete(selected);
   setStatus(ok ? "Complete" : "Missing tracking", ok);
+
+  updateMasterUI();
 }
 
 async function save(){
@@ -372,6 +437,16 @@ function logout(){
   showLogin();
 }
 
+function createMailDraft(){
+  if (!isMasterLogin() || !selected) return;
+
+  // Always use the latest input values (in case you edited but didn't save yet)
+  const url = buildMailDraftLink();
+  if (!url) return;
+
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
@@ -379,6 +454,7 @@ keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 reloadBtn.addEventListener("click", loadOrders);
 logoutBtn.addEventListener("click", logout);
 saveBtn.addEventListener("click", save);
+mailBtn.addEventListener("click", createMailDraft);
 
 (function init(){
   const k = sessionStorage.getItem("supplier_key") || "";
