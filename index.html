@@ -37,6 +37,11 @@
     .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
     .center{min-height:100vh;display:grid;place-items:center}
     .hidden{display:none !important}
+    .kvRow{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin:12px 0 6px}
+    .kvBlock{min-width:0}
+    .kvLabel{color:var(--muted);font-size:12px}
+    .kvValue{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .kvValue.right{text-align:right}
   </style>
 </head>
 <body>
@@ -44,9 +49,9 @@
 <section id="loginView" class="center">
   <div class="card" style="max-width:520px;width:100%">
     <h1>Delivery Overview 📦</h1>
-    <div class="sub" style="margin-top:6px">Enter your <strong>Supplier KEY</strong> to access your deliveries.</div>
+    <div class="sub" style="margin-top:6px">Enter password to access your deliveries.</div>
 
-    <label for="keyInput" style="margin-top:14px">Supplier KEY</label>
+    <label for="keyInput" style="margin-top:14px">Password</label>
     <input id="keyInput" type="password" autocomplete="current-password" />
 
     <div class="row" style="margin-top:12px">
@@ -63,7 +68,7 @@
     <header>
       <div>
         <h1>Delivery Overview 📦</h1>
-        <div class="sub">Open an order and enter Carrier / Tracking number / Tracking link.</div>
+        <div class="sub">Open an order and enter shipment details.</div>
       </div>
       <div class="row">
         <button id="reloadBtn" class="btn" type="button">Reload</button>
@@ -80,10 +85,16 @@
         <div id="noSelection" class="hint">Open an order from the table.</div>
 
         <div id="form" class="hidden">
-          <div style="margin:12px 0 6px">
-            <div class="muted" style="font-size:12px">Customer</div>
-            <div id="customerLabel" style="font-size:16px;font-weight:600">—</div>
-            <div id="orderIdLabel" class="muted" style="font-size:12px;margin-top:2px">Order ID: —</div>
+          <!-- Customer (left) + Order ID (right), same style -->
+          <div class="kvRow">
+            <div class="kvBlock" style="flex:1">
+              <div class="kvLabel">Customer</div>
+              <div id="customerLabel" class="kvValue">—</div>
+            </div>
+            <div class="kvBlock" style="flex:0 0 auto">
+              <div class="kvLabel" style="text-align:right">Order ID</div>
+              <div id="orderIdLabel" class="kvValue right">—</div>
+            </div>
           </div>
 
           <label>Carrier</label>
@@ -207,7 +218,7 @@ function jsonp(url){
 async function doLogin(){
   const key = keyInput.value.trim();
   if(!key){
-    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter your Supplier KEY.</span>";
+    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter password.</span>";
     return;
   }
 
@@ -218,7 +229,7 @@ async function doLogin(){
     const data = await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`);
 
     if(!data.ok || !data.supplier){
-      loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid key.</span>";
+      loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid password.</span>";
       return;
     }
 
@@ -242,7 +253,7 @@ async function loadOrders(){
   form.classList.add("hidden");
   noSelection.classList.remove("hidden");
   customerLabel.textContent = "—";
-  orderIdLabel.textContent = "Order ID: —";
+  orderIdLabel.textContent = "—";
   setStatus("No selection", false);
   msg.textContent = "";
 
@@ -294,7 +305,7 @@ function openRow(rowId){
   if(!selected) return;
 
   customerLabel.textContent = selected.Customer || "—";
-  orderIdLabel.textContent = "Order ID: " + selected.rowId;
+  orderIdLabel.textContent = String(selected.rowId || "—");
 
   carrier.value = selected.Carrier || "";
   trackingNumber.value = selected.Trackingnumber || "";
