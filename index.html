@@ -108,8 +108,9 @@
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
 
-            <!-- ✅ MASTER ONLY: mail draft button -->
-            <button id="mailBtn" class="btn hidden" type="button">Create mail draft</button>
+            <!-- ✅ MASTER ONLY -->
+            <button id="gmailDraftBtn" class="btn hidden" type="button">Gmail draft</button>
+            <button id="appleMailDraftBtn" class="btn hidden" type="button">Apple Mail draft</button>
           </div>
 
           <div class="hint" id="msg"></div>
@@ -162,7 +163,8 @@ const carrier = $("carrier");
 const trackingNumber = $("trackingNumber");
 const trackingLink = $("trackingLink");
 const saveBtn = $("saveBtn");
-const mailBtn = $("mailBtn");
+const gmailDraftBtn = $("gmailDraftBtn");
+const appleMailDraftBtn = $("appleMailDraftBtn");
 const msg = $("msg");
 
 let supplier = "";
@@ -224,27 +226,29 @@ function jsonp(url){
 }
 
 function updateMasterUI(){
-  // Only master sees mail button (and only when a row is open)
   const master = isMasterLogin();
-  if (!master) {
-    mailBtn.classList.add("hidden");
-    return;
+  const hasSelection = !!selected;
+
+  if (master && hasSelection) {
+    gmailDraftBtn.classList.remove("hidden");
+    appleMailDraftBtn.classList.remove("hidden");
+  } else {
+    gmailDraftBtn.classList.add("hidden");
+    appleMailDraftBtn.classList.add("hidden");
   }
-  // master: show only if a selection exists
-  if (selected) mailBtn.classList.remove("hidden");
-  else mailBtn.classList.add("hidden");
 }
 
-function buildMailDraftLink(){
-  if(!selected) return "";
+function getDraftData(){
+  if(!selected) return null;
 
-  // Prefer supplier email if present (Apps Script should return MailSupplier for master list).
-  // Fallback: leave empty so user can fill.
-  const to = (selected.MailSupplier || "").trim();
-
+  // Use latest input values (even if not saved yet)
   const Customer = (selected.Customer || "").trim();
   const OrderID = (selected.OrderID || "").trim();
-  const Supplier = (selected.Supplier || "").trim();
+
+  // IMPORTANT: Apps Script should return MailCustomer for master list.
+  // If empty, draft still opens but without recipient.
+  const to = String(selected.MailCustomer || "").trim();
+
   const Carrier = (carrier.value || selected.Carrier || "").trim();
   const Trackingnumber = (trackingNumber.value || selected.Trackingnumber || "").trim();
   const Trackinglink = (trackingLink.value || selected.Trackinglink || "").trim();
@@ -252,26 +256,46 @@ function buildMailDraftLink(){
   const subject = `Tracking details – Order ${OrderID || "(no order id)"}`;
 
   const body =
-`Hi ${Supplier || "there"},
+`Hi ${Customer || "there"},
 
-Please find the shipment details below:
+Here are your shipment details:
 
-Customer: ${Customer || "-"}
 Order ID: ${OrderID || "-"}
 Carrier: ${Carrier || "-"}
 Tracking number: ${Trackingnumber || "-"}
 Tracking link: ${Trackinglink || "-"}
 
-Thanks`;
+Kind regards`;
 
-  // Gmail compose URL (works for most users). If they don't use Gmail, they can copy/paste.
+  return { to, subject, body };
+}
+
+function openGmailDraft(){
+  if (!isMasterLogin() || !selected) return;
+  const d = getDraftData();
+  if (!d) return;
+
   const url =
     "https://mail.google.com/mail/?view=cm&fs=1" +
-    `&to=${encodeURIComponent(to)}` +
-    `&su=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(body)}`;
+    `&to=${encodeURIComponent(d.to)}` +
+    `&su=${encodeURIComponent(d.subject)}` +
+    `&body=${encodeURIComponent(d.body)}`;
 
-  return url;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function openAppleMailDraft(){
+  if (!isMasterLogin() || !selected) return;
+  const d = getDraftData();
+  if (!d) return;
+
+  // mailto: works with Apple Mail (and most default mail apps)
+  const url =
+    "mailto:" + encodeURIComponent(d.to) +
+    `?subject=${encodeURIComponent(d.subject)}` +
+    `&body=${encodeURIComponent(d.body)}`;
+
+  window.location.href = url;
 }
 
 async function doLogin(){
@@ -336,8 +360,6 @@ function renderOrders(){
     return;
   }
 
-  const master = isMasterLogin();
-
   tbody.innerHTML = "";
   for(const o of orders){
     const ok = isComplete(o);
@@ -345,7 +367,6 @@ function renderOrders(){
     tr.innerHTML = `
       <td>
         <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
-        ${master && o.Supplier ? `<div class="muted" style="font-size:12px;margin-top:2px">Supplier: ${escapeHTML(o.Supplier)}</div>` : ""}
       </td>
       <td>
         <span class="status ${ok ? "ready":"missing"}">
@@ -437,16 +458,6 @@ function logout(){
   showLogin();
 }
 
-function createMailDraft(){
-  if (!isMasterLogin() || !selected) return;
-
-  // Always use the latest input values (in case you edited but didn't save yet)
-  const url = buildMailDraftLink();
-  if (!url) return;
-
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
@@ -454,7 +465,9 @@ keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 reloadBtn.addEventListener("click", loadOrders);
 logoutBtn.addEventListener("click", logout);
 saveBtn.addEventListener("click", save);
-mailBtn.addEventListener("click", createMailDraft);
+
+gmailDraftBtn.addEventListener("click", openGmailDraft);
+appleMailDraftBtn.addEventListener("click", openAppleMailDraft);
 
 (function init(){
   const k = sessionStorage.getItem("supplier_key") || "";
