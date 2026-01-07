@@ -37,7 +37,6 @@
     .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
     .center{min-height:100vh;display:grid;place-items:center}
     .hidden{display:none !important}
-    code{background:#0d1429;border:1px solid rgba(34,49,88,.8);padding:2px 6px;border-radius:8px;color:var(--text)}
   </style>
 </head>
 <body>
@@ -74,15 +73,17 @@
 
     <div class="two">
       <section class="card">
-        <div class="row" style="justify-content:space-between">
-          <div class="muted">Row: <strong id="rowLabel" style="color:var(--text)">—</strong></div>
+        <div class="row" style="justify-content:flex-end">
           <span id="statusBadge" class="status missing"><span class="dot"></span><span id="statusText">No selection</span></span>
         </div>
 
         <div id="noSelection" class="hint">Open an order from the table.</div>
 
         <div id="form" class="hidden">
-          <div class="hint"><span class="muted">Customer:</span> <strong id="customerLabel">—</strong></div>
+          <div style="margin:12px 0 6px">
+            <div class="muted" style="font-size:12px">Customer</div>
+            <div id="customerLabel" style="font-size:16px;font-weight:600">—</div>
+          </div>
 
           <label>Carrier</label>
           <input id="carrier" />
@@ -105,18 +106,15 @@
         <table class="table">
           <thead>
             <tr>
-              <th style="width:100px">Row</th>
               <th>Customer</th>
               <th style="width:170px">Status</th>
               <th style="width:110px">Action</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="4" class="muted">Loading…</td></tr>
+            <tr><td colspan="3" class="muted">Loading…</td></tr>
           </tbody>
         </table>
-
-        <div class="hint muted">No CORS issues: this portal uses JSONP.</div>
       </section>
     </div>
   </div>
@@ -139,7 +137,6 @@ const reloadBtn = $("reloadBtn");
 const logoutBtn = $("logoutBtn");
 
 const tbody = $("tbody");
-const rowLabel = $("rowLabel");
 const statusBadge = $("statusBadge");
 const statusText = $("statusText");
 const noSelection = $("noSelection");
@@ -242,16 +239,15 @@ async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
   noSelection.classList.remove("hidden");
-  rowLabel.textContent = "—";
   setStatus("No selection", false);
   msg.textContent = "";
 
-  tbody.innerHTML = "<tr><td colspan='4' class='muted'>Loading…</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
   const data = await jsonp(`${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`);
 
   if(!data.ok){
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">${escapeHTML(data.error || "Error")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML(data.error || "Error")}</td></tr>`;
     return;
   }
 
@@ -261,7 +257,7 @@ async function loadOrders(){
 
 function renderOrders(){
   if(!orders.length){
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">No orders found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
     return;
   }
 
@@ -270,8 +266,9 @@ function renderOrders(){
     const ok = isComplete(o);
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong>${escapeHTML(o.rowId)}</strong></td>
-      <td>${escapeHTML(o.Customer || "")}</td>
+      <td>
+        <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
+      </td>
       <td>
         <span class="status ${ok ? "ready":"missing"}">
           <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
@@ -291,7 +288,6 @@ function openRow(rowId){
   selected = orders.find(x => Number(x.rowId) === rowId);
   if(!selected) return;
 
-  rowLabel.textContent = String(selected.rowId);
   customerLabel.textContent = selected.Customer || "—";
 
   carrier.value = selected.Carrier || "";
