@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Supplier Portal – Tracking</title>
+  <title>Delivery Overview 📦</title>
   <style>
     :root{--bg:#0b1220;--card:#111a2e;--text:#e7eeff;--muted:#93a4c7;--acc:#4f8cff;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
     *{box-sizing:border-box}
@@ -43,8 +43,8 @@
 
 <section id="loginView" class="center">
   <div class="card" style="max-width:520px;width:100%">
-    <h1>Supplier Portal – Login</h1>
-    <div class="sub" style="margin-top:6px">Enter your <strong>Supplier KEY</strong> to access your orders.</div>
+    <h1>Delivery Overview 📦</h1>
+    <div class="sub" style="margin-top:6px">Enter your <strong>Supplier KEY</strong> to access your deliveries.</div>
 
     <label for="keyInput" style="margin-top:14px">Supplier KEY</label>
     <input id="keyInput" type="password" autocomplete="current-password" />
@@ -62,7 +62,7 @@
   <div class="wrap">
     <header>
       <div>
-        <h1>Supplier Portal – Tracking</h1>
+        <h1>Delivery Overview 📦</h1>
         <div class="sub">Open an order and enter Carrier / Tracking number / Tracking link.</div>
       </div>
       <div class="row">
@@ -83,6 +83,7 @@
           <div style="margin:12px 0 6px">
             <div class="muted" style="font-size:12px">Customer</div>
             <div id="customerLabel" style="font-size:16px;font-weight:600">—</div>
+            <div id="orderIdLabel" class="muted" style="font-size:12px;margin-top:2px">Order ID: —</div>
           </div>
 
           <label>Carrier</label>
@@ -142,6 +143,7 @@ const statusText = $("statusText");
 const noSelection = $("noSelection");
 const form = $("form");
 const customerLabel = $("customerLabel");
+const orderIdLabel = $("orderIdLabel");
 const carrier = $("carrier");
 const trackingNumber = $("trackingNumber");
 const trackingLink = $("trackingLink");
@@ -239,6 +241,8 @@ async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
   noSelection.classList.remove("hidden");
+  customerLabel.textContent = "—";
+  orderIdLabel.textContent = "Order ID: —";
   setStatus("No selection", false);
   msg.textContent = "";
 
@@ -268,6 +272,7 @@ function renderOrders(){
     tr.innerHTML = `
       <td>
         <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
+        <div class="muted" style="font-size:11px">Order ID: ${escapeHTML(o.rowId)}</div>
       </td>
       <td>
         <span class="status ${ok ? "ready":"missing"}">
@@ -289,6 +294,7 @@ function openRow(rowId){
   if(!selected) return;
 
   customerLabel.textContent = selected.Customer || "—";
+  orderIdLabel.textContent = "Order ID: " + selected.rowId;
 
   carrier.value = selected.Carrier || "";
   trackingNumber.value = selected.Trackingnumber || "";
