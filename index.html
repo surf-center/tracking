@@ -24,7 +24,7 @@
     .btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
     .btn.primary{background:linear-gradient(135deg,var(--acc),#6d5cff);border-color:transparent}
     .btn:disabled{opacity:.55;cursor:not-allowed}
-    .btn.icon{width:40px;height:40px;display:inline-grid;place-items:center;padding:0;border-radius:12px;font-weight:700}
+    .btn.icon{width:40px;height:40px;display:inline-grid;place-items:center;padding:0;border-radius:12px;font-weight:800}
     .table{width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;border:1px solid rgba(34,49,88,.8)}
     .table th,.table td{padding:10px 12px;border-bottom:1px solid rgba(34,49,88,.7);font-size:13px;vertical-align:top}
     .table th{color:var(--muted);font-weight:600;background:#0d1429}
@@ -87,7 +87,6 @@
         <div class="sub">Open an order to enter / check shipment details</div>
       </div>
       <div class="row">
-        <!-- master-only + button -->
         <button id="addToggleBtn" class="btn icon hidden" type="button" title="Add order">+</button>
         <button id="reloadBtn" class="btn" type="button">Reload</button>
         <button id="logoutBtn" class="btn" type="button">Logout</button>
@@ -97,11 +96,10 @@
     <div class="two">
       <section class="card">
 
-        <!-- master-only: create order panel -->
         <div id="createPanel" class="hidden">
           <div class="panelTop">
             <div style="min-width:0">
-              <div style="font-weight:700">New order</div>
+              <div style="font-weight:800">New order</div>
             </div>
             <button id="addCloseBtn" class="btn" type="button">Close</button>
           </div>
@@ -160,7 +158,6 @@
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
 
-            <!-- MASTER ONLY: mail drafts -->
             <button id="gmailDraftBtn" class="btn hidden" type="button">Gmail draft</button>
             <button id="appleMailDraftBtn" class="btn hidden" type="button">Apple Mail draft</button>
           </div>
@@ -307,21 +304,16 @@ function updateMasterUI(){
 
 function toggleCreatePanel(forceOpen){
   if (!isMasterLogin()) return;
-  if (typeof forceOpen === "boolean") {
-    createPanel.classList.toggle("hidden", !forceOpen);
-  } else {
-    createPanel.classList.toggle("hidden");
-  }
+  if (typeof forceOpen === "boolean") createPanel.classList.toggle("hidden", !forceOpen);
+  else createPanel.classList.toggle("hidden");
   createMsg.textContent = "";
-  if (!createPanel.classList.contains("hidden")) {
-    setTimeout(()=> newCustomer.focus(), 20);
-  }
+  if (!createPanel.classList.contains("hidden")) setTimeout(()=> newCustomer.focus(), 20);
 }
 
 function getDraftData(){
   if(!selected) return null;
 
-  // Recipient = Mail Customer from the SAME row as Customer
+  // Recipient = Mail Customer from same row
   const to = String(selected.MailCustomer || selected.Mailadress || "").trim();
 
   const Customer = (selected.Customer || "").trim();
@@ -419,12 +411,10 @@ async function createOrder(){
 
     if (data && data.ok) {
       createMsg.innerHTML = "<span style='color:var(--ok)'>Created ✓</span>";
-
       newCustomer.value = "";
       newMailCustomer.value = "";
       newSupplier.value = "Kubus Sports";
       newOrderId.value = "";
-
       await loadOrders();
       toggleCreatePanel(false);
     } else {
@@ -448,10 +438,14 @@ async function doLogin(){
   loginMsg.textContent = "Checking…";
 
   try{
-    const data = await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`);
+    const url = `${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`;
+    const data = await jsonp(url);
+    console.log("AUTH response:", data);
 
-    if(!data.ok || !data.supplier){
-      loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid password.</span>";
+    if(!data || !data.ok || !data.supplier){
+      loginMsg.innerHTML =
+        `<span style='color:var(--bad)'>Login failed.</span><br>` +
+        `<span class='muted'>Response: ${escapeHTML(JSON.stringify(data))}</span>`;
       return;
     }
 
@@ -464,7 +458,10 @@ async function doLogin(){
     showPortal();
     await loadOrders();
   }catch(e){
-    loginMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
+    console.error(e);
+    loginMsg.innerHTML =
+      `<span style='color:var(--bad)'>Could not reach server.</span><br>` +
+      `<span class='muted'>${escapeHTML(String(e && e.message ? e.message : e))}</span>`;
   }finally{
     loginBtn.disabled = false;
   }
@@ -481,17 +478,22 @@ async function loadOrders(){
 
   tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
-  const data = await jsonp(`${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`);
+  try{
+    const data = await jsonp(`${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`);
 
-  if(!data.ok){
-    tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML(data.error || "Error")}</td></tr>`;
+    if(!data || !data.ok){
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
+      updateMasterUI();
+      return;
+    }
+
+    orders = data.orders || [];
+    renderOrders();
     updateMasterUI();
-    return;
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">Could not reach server.</td></tr>`;
+    updateMasterUI();
   }
-
-  orders = data.orders || [];
-  renderOrders();
-  updateMasterUI();
 }
 
 function renderOrders(){
@@ -505,9 +507,7 @@ function renderOrders(){
     const ok = isComplete(o);
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>
-        <div style="font-weight:600">${escapeHTML(o.Customer || "")}</div>
-      </td>
+      <td><div style="font-weight:600">${escapeHTML(o.Customer || "")}</div></td>
       <td>
         <span class="status ${ok ? "ready":"missing"}">
           <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
@@ -571,7 +571,7 @@ async function save(){
 
     const data = await jsonp(url);
 
-    if(data.ok){
+    if(data && data.ok){
       selected.Carrier = Carrier;
       selected.Trackingnumber = Trackingnumber;
       selected.Trackinglink = Trackinglink;
