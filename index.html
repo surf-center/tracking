@@ -28,7 +28,7 @@
     .table th{color:var(--muted);font-weight:600;background:#0d1429}
     .table tr:last-child td{border-bottom:none}
     .muted{color:var(--muted)}
-    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid rgba(34,49,88,.8);font-size:12px;color:var(--muted)}
+    .status{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid rgba(34,49,88,.8);font-size:12px;color:var(--muted);white-space:nowrap}
     .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
     .status.ready .dot{background:var(--ok)}
     .status.missing .dot{background:var(--bad)}
@@ -204,12 +204,13 @@
           <table class="table">
             <thead>
               <tr>
-                <th style="width:70%">Customer</th>
-                <th style="width:30%">Order ID</th>
+                <th style="width:52%">Customer</th>
+                <th style="width:18%">Order ID</th>
+                <th style="width:30%">Action</th>
               </tr>
             </thead>
             <tbody id="completedTbody">
-              <tr><td colspan="2" class="muted">No completed orders yet.</td></tr>
+              <tr><td colspan="3" class="muted">No completed orders yet.</td></tr>
             </tbody>
           </table>
         </div>
@@ -273,12 +274,12 @@ let supplierKey = "";
 let orders = [];
 let selected = null;
 
-let suppliersList = [];   // dropdown
-let supplierMailMap = {}; // not required here but kept
+let suppliersList = [];
+let supplierMailMap = {};
 
-// ✅ Completed tracking (master only) stored locally so it survives refresh
+// completed
 let completedRowIds = new Set();
-let completedOrders = []; // cached objects (rows) for rendering
+let completedOrders = [];
 
 function escapeHTML(s){
   return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
@@ -343,6 +344,9 @@ function getAny(obj, wantedKeys){
   }
   return "";
 }
+function sortNewestFirst(arr){
+  return (arr || []).slice().sort((a,b)=> Number(b.rowId||0) - Number(a.rowId||0));
+}
 
 function openGmailOrMailto(to, subject, body){
   const gmailUrl =
@@ -361,11 +365,10 @@ function openGmailOrMailto(to, subject, body){
   }
 }
 
-/* ✅ magic link key from path: /tracking/<SUPPLIERKEY> */
+/* magic link key from path: /tracking/<SUPPLIERKEY> */
 function getSupplierKeyFromUrl(){
   let path = window.location.pathname;
 
-  // deep-link support via 404.html (optional)
   const deep = sessionStorage.getItem("deep_link_path");
   if(deep){
     path = deep;
@@ -376,10 +379,8 @@ function getSupplierKeyFromUrl(){
   return parts.length ? parts[parts.length - 1] : "";
 }
 
-/* ===== Completed storage (master only) ===== */
-function completedStorageKey(){
-  return "completed_rows_master"; // one master view
-}
+/* Completed storage */
+function completedStorageKey(){ return "completed_rows_master"; }
 function loadCompletedFromStorage(){
   completedRowIds = new Set();
   completedOrders = [];
@@ -405,10 +406,8 @@ function markRowCompleted(row){
   completedRowIds.add(Number(row.rowId));
   saveCompletedToStorage();
 
-  // remove from open orders list
   orders = orders.filter(x => Number(x.rowId) !== Number(row.rowId));
 
-  // keep in completed list (upsert)
   const exists = completedOrders.some(x => Number(x.rowId) === Number(row.rowId));
   if(!exists) completedOrders.unshift(row);
 
@@ -445,7 +444,6 @@ async function loginWithKey(key, showErrors){
 
     showPortal();
 
-    // master-only UI
     newOrderCard.classList.toggle("hidden", !isMasterLogin());
     completedWrap.classList.toggle("hidden", !isMasterLogin());
 
@@ -512,7 +510,6 @@ async function loadOrders(){
 
   const all = data.orders || [];
 
-  // split open vs completed (master only)
   if(isMasterLogin()){
     const open = [];
     const done = [];
@@ -523,12 +520,12 @@ async function loadOrders(){
       else open.push(o);
     }
 
-    orders = open;
-    completedOrders = done; // refresh list from sheet
+    orders = sortNewestFirst(open);
+    completedOrders = sortNewestFirst(done);
     renderOrders();
     renderCompleted();
   }else{
-    orders = all;
+    orders = sortNewestFirst(all);
     renderOrders();
   }
 }
@@ -545,7 +542,6 @@ function renderOrders(){
   for(const o of orders){
     const ok = isComplete(o);
     const supplierName = getAny(o, ["Supplier"]);
-
     const supplierLine = master && supplierName
       ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
       : "";
@@ -567,7 +563,7 @@ function renderOrders(){
           <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
         </span>
       </td>
-      <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start">
+      <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">
         <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
         ${mailSupplierBtnHtml}
       </td>
@@ -585,7 +581,7 @@ function renderOrders(){
 }
 
 function openRow(rowId){
-  selected = orders.find(x => Number(x.rowId) === rowId);
+  selected = orders.find(x => Number(x.rowId) === rowId) || completedOrders.find(x => Number(x.rowId) === rowId) || null;
   if(!selected) return;
 
   customerLabel.textContent = getAny(selected, ["Customer"]) || "—";
@@ -619,7 +615,7 @@ function renderCompleted(){
   });
 
   if(!filtered.length){
-    completedTbody.innerHTML = `<tr><td colspan="2" class="muted">No completed orders yet.</td></tr>`;
+    completedTbody.innerHTML = `<tr><td colspan="3" class="muted">No completed orders yet.</td></tr>`;
     return;
   }
 
@@ -634,9 +630,28 @@ function renderCompleted(){
         <div class="muted supplierSmall">${escapeHTML(getAny(o, ["Supplier"]))}</div>
       </td>
       <td>${escapeHTML(getAny(o, ["Order ID","OrderID"]) || "—")}</td>
+      <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">
+        <button class="btn" data-copen="${escapeHTML(o.rowId)}">Open</button>
+        <button class="btn" data-cmail="${escapeHTML(o.rowId)}">Mail customer</button>
+        <button class="btn" data-capple="${escapeHTML(o.rowId)}"><span class="icon"><span class="appleBadge"></span><span>Mail customer</span></span></button>
+        <button class="btn" data-csupplier="${escapeHTML(o.rowId)}">Mail supplier</button>
+      </td>
     `;
     completedTbody.appendChild(tr);
   }
+
+  completedTbody.querySelectorAll("button[data-copen]").forEach(btn=>{
+    btn.addEventListener("click", ()=> openRow(Number(btn.dataset.copen)));
+  });
+  completedTbody.querySelectorAll("button[data-cmail]").forEach(btn=>{
+    btn.addEventListener("click", ()=> mailCustomerFromRowId(Number(btn.dataset.cmail), false));
+  });
+  completedTbody.querySelectorAll("button[data-capple]").forEach(btn=>{
+    btn.addEventListener("click", ()=> mailCustomerFromRowId(Number(btn.dataset.capple), true));
+  });
+  completedTbody.querySelectorAll("button[data-csupplier]").forEach(btn=>{
+    btn.addEventListener("click", ()=> mailSupplierFromAnyList(Number(btn.dataset.csupplier)));
+  });
 }
 
 /* ---- Save ---- */
@@ -714,9 +729,10 @@ Tracking link: ${Trackinglink || "-"}
 
 Kind regards`;
 
-  // ✅ Mark completed immediately after click
-  // (we keep the row object, so it appears in completed list)
-  markRowCompleted({ ...selected });
+  // move to completed if not already
+  if(!completedRowIds.has(Number(selected.rowId))){
+    markRowCompleted({ ...selected });
+  }
 
   if(useApple){
     window.location.href =
@@ -728,11 +744,33 @@ Kind regards`;
   }
 }
 
+function findRowAnywhere(rowId){
+  const id = Number(rowId);
+  return orders.find(x=>Number(x.rowId)===id)
+      || completedOrders.find(x=>Number(x.rowId)===id)
+      || null;
+}
+function mailCustomerFromRowId(rowId, useApple){
+  const row = findRowAnywhere(rowId);
+  if(!row) return;
+  selected = row;
+  mailCustomer(useApple);
+}
+
 /* ---- Mail supplier per row ---- */
 function mailSupplierRow(rowId){
   if(!isMasterLogin()) return;
+  const row = orders.find(x => Number(x.rowId) === Number(rowId));
+  if(!row){
+    msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>";
+    return;
+  }
+  mailSupplierFromAnyList(Number(rowId));
+}
 
-  const row = orders.find(x => Number(x.rowId) === rowId);
+function mailSupplierFromAnyList(rowId){
+  if(!isMasterLogin()) return;
+  const row = findRowAnywhere(rowId);
   if(!row){
     msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>";
     return;
@@ -773,7 +811,6 @@ function expandNewOrder(open){
   toggleNewOrderBtn.textContent = open ? "–" : "+";
   toggleNewOrderBtn.setAttribute("aria-expanded", open ? "true" : "false");
 }
-
 toggleNewOrderBtn.addEventListener("click", ()=>{
   const isOpen = !newOrderBody.classList.contains("hidden");
   expandNewOrder(!isOpen);
