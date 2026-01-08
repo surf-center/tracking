@@ -15,6 +15,7 @@
     .card{background:var(--card);border:1px solid rgba(34,49,88,.8);border-radius:16px;padding:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
+
     input, select{
       width:100%;
       border:1px solid rgba(34,49,88,.9);
@@ -28,6 +29,7 @@
       -moz-appearance:none;
     }
     input:focus, select:focus{border-color:rgba(79,140,255,.8);box-shadow:0 0 0 4px rgba(79,140,255,.15)}
+    input::placeholder{color:rgba(147,164,199,.55)}
     select{background-image:none !important;padding-right:12px}
 
     .btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
@@ -66,27 +68,19 @@
     .icon{display:inline-flex;align-items:center;gap:8px}
     .appleBadge{font-size:14px;line-height:1;opacity:.9;margin-right:2px}
 
-    /* ✅ cleaner divider lines (fix) */
-    .divider{
-      height:1px;
-      background:rgba(34,49,88,.7);
-      margin:14px 0;
-      width:100%;
-    }
+    /* ✅ fixed divider line */
+    .divider{height:1px;background:rgba(34,49,88,.7);margin:14px 0;width:100%}
 
     .sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .toggleBtn{padding:6px 10px;border-radius:10px}
     .mini{font-size:12px;color:var(--muted)}
 
     .cellActions{white-space:nowrap;display:flex;gap:8px;justify-content:flex-start;align-items:center;flex-wrap:nowrap}
+    /* ✅ status badge REALLY right aligned in cell */
+    .cellStatus{display:flex;justify-content:flex-end;align-items:center;text-align:right}
 
-    /* ✅ Status right aligned in its column */
-    .cellStatus{
-      display:flex;
-      justify-content:flex-end; /* right align */
-      align-items:center;
-      text-align:right;
-    }
+    /* keep customer one line */
+    .custOneLine{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   </style>
 </head>
 <body>
@@ -162,8 +156,11 @@
         <div id="noSelection" class="hint">Open an order from the table.</div>
 
         <div id="form" class="hidden">
-          <div class="row" style="justify-content:center;margin-bottom:10px">
-            <span id="statusBadge" class="status missing"><span class="dot"></span><span id="statusText">No selection</span></span>
+          <!-- ✅ status belongs with customer/order block area, and right aligned -->
+          <div class="row" style="justify-content:flex-end;margin-bottom:8px">
+            <span id="statusBadge" class="status missing">
+              <span class="dot"></span><span id="statusText">No selection</span>
+            </span>
           </div>
 
           <div class="kvRow">
@@ -554,9 +551,7 @@ function renderOrders(){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
-          ${escapeHTML(getAny(o, ["Customer"]))}
-        </div>
+        <div class="custOneLine">${escapeHTML(getAny(o, ["Customer"]))}</div>
         ${supplierLine}
         ${orderIdLine}
       </td>
@@ -634,9 +629,7 @@ function renderCompleted(){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
-          ${escapeHTML(getAny(o, ["Customer"]))}
-        </div>
+        <div class="custOneLine">${escapeHTML(getAny(o, ["Customer"]))}</div>
         ${supplierLine}
         ${orderIdLine}
       </td>
