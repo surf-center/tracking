@@ -55,18 +55,7 @@
 
     /* icon text helpers */
     .icon{display:inline-flex;align-items:center;gap:8px}
-    .gmailBadge{
-      width:18px;height:18px;border-radius:6px;
-      display:inline-grid;place-items:center;
-      background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.12);
-      font-weight:700;font-size:11px;line-height:1;
-    }
-    .appleBadge{
-      font-size:14px;line-height:1;
-      opacity:.9;
-      margin-right:2px;
-    }
+    .appleBadge{font-size:14px;line-height:1;opacity:.9;margin-right:2px}
   </style>
 </head>
 <body>
@@ -133,14 +122,13 @@
           <label>Tracking link</label>
           <input id="trackingLink" />
 
-          <!-- ✅ mail supplier removed from left card -->
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
 
-            <button id="mailCustomerBtn" class="btn hidden" type="button">
-              <span class="icon"><span class="gmailBadge">M</span><span>Mail customer</span></span>
-            </button>
+            <!-- ✅ Gmail/default button: NO logo -->
+            <button id="mailCustomerBtn" class="btn hidden" type="button">Mail customer</button>
 
+            <!-- ✅ Apple button: keep Apple logo -->
             <button id="appleMailBtn" class="btn hidden" type="button">
               <span class="icon"><span class="appleBadge"></span><span>Mail customer</span></span>
             </button>
@@ -151,17 +139,12 @@
       </section>
 
       <section class="card">
-        <!-- ✅ Mail supplier moved to right card header -->
-        <div class="row" style="justify-content:flex-end;margin-bottom:10px">
-          <button id="mailSupplierBtn" class="btn hidden" type="button">Mail supplier</button>
-        </div>
-
         <table class="table">
           <thead>
             <tr>
               <th>Customer</th>
               <th style="width:170px">Status</th>
-              <th style="width:140px">Action</th>
+              <th style="width:240px">Action</th>
             </tr>
           </thead>
           <tbody id="tbody">
@@ -204,7 +187,6 @@ const trackingLink = $("trackingLink");
 
 const saveBtn = $("saveBtn");
 const mailCustomerBtn = $("mailCustomerBtn");
-const mailSupplierBtn = $("mailSupplierBtn");  // now in right card
 const appleMailBtn = $("appleMailBtn");
 const msg = $("msg");
 
@@ -294,6 +276,7 @@ function openGmailOrMailto(to, subject, body){
   }
 }
 
+/* ---- Login ---- */
 async function doLogin(){
   const key = keyInput.value.trim();
   if(!key){
@@ -327,6 +310,7 @@ async function doLogin(){
   }
 }
 
+/* ---- Load / render ---- */
 async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
@@ -370,6 +354,10 @@ function renderOrders(){
       ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
       : "";
 
+    const mailSupplierBtnHtml = master
+      ? `<button class="btn" data-mailsupplier="${escapeHTML(o.rowId)}">Mail supplier</button>`
+      : "";
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
@@ -381,8 +369,9 @@ function renderOrders(){
           <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
         </span>
       </td>
-      <td style="white-space:nowrap">
+      <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start">
         <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+        ${mailSupplierBtnHtml}
       </td>
     `;
     tbody.appendChild(tr);
@@ -390,6 +379,10 @@ function renderOrders(){
 
   tbody.querySelectorAll("button[data-open]").forEach(btn=>{
     btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
+  });
+
+  tbody.querySelectorAll("button[data-mailsupplier]").forEach(btn=>{
+    btn.addEventListener("click", ()=> mailSupplierRow(Number(btn.dataset.mailsupplier)));
   });
 }
 
@@ -414,9 +407,9 @@ function openRow(rowId){
   const master = isMasterLogin();
   mailCustomerBtn.classList.toggle("hidden", !master);
   appleMailBtn.classList.toggle("hidden", !master);
-  mailSupplierBtn.classList.toggle("hidden", !master); // now right card
 }
 
+/* ---- Save ---- */
 async function save(){
   if(!selected) return;
 
@@ -461,6 +454,7 @@ async function save(){
   }
 }
 
+/* ---- Mail customer ---- */
 function mailCustomer(useApple){
   if(!isMasterLogin() || !selected) return;
 
@@ -503,13 +497,20 @@ Kind regards`;
   }
 }
 
-function mailSupplier(){
-  if(!isMasterLogin() || !selected) return;
+/* ---- Mail supplier per row (multiple suppliers) ---- */
+function mailSupplierRow(rowId){
+  if(!isMasterLogin()) return;
 
-  const to = getAny(selected, ["Mail Supplier","MailSupplier"]);
-  const supplierName = getAny(selected, ["Supplier"]);
-  const customerName = getAny(selected, ["Customer"]);
-  const orderId = getAny(selected, ["Order ID","OrderID"]);
+  const row = orders.find(x => Number(x.rowId) === rowId);
+  if(!row){
+    msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>";
+    return;
+  }
+
+  const to = getAny(row, ["Mail Supplier","MailSupplier"]);
+  const supplierName = getAny(row, ["Supplier"]);
+  const customerName = getAny(row, ["Customer"]);
+  const orderId = getAny(row, ["Order ID","OrderID"]);
 
   msg.innerHTML = `<span class="muted">Mail supplier to: ${escapeHTML(to || "(not found)")}</span>`;
 
@@ -537,6 +538,7 @@ Thank you!`;
   openGmailOrMailto(to, subject, body);
 }
 
+/* ---- Logout ---- */
 function logout(){
   supplier = "";
   supplierKey = "";
@@ -547,6 +549,7 @@ function logout(){
   showLogin();
 }
 
+/* ---- Events ---- */
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
@@ -557,7 +560,6 @@ saveBtn.addEventListener("click", save);
 
 mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
 appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
-mailSupplierBtn.addEventListener("click", mailSupplier);
 
 (function init(){
   const k = sessionStorage.getItem("supplier_key") || "";
