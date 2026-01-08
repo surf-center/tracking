@@ -30,7 +30,6 @@
       color:var(--text);
       min-height:100vh
     }
-
     .wrap{max-width:1100px;margin:0 auto;padding:22px 14px}
     header{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
     h1{font-size:18px;margin:0}
@@ -47,7 +46,6 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
 
-    /* ===== Inputs (consistent, no yellow mail field) ===== */
     input, select{
       width:100%;
       border:1px solid var(--border);
@@ -67,7 +65,7 @@
       box-shadow:0 0 0 4px rgba(37,99,235,.12)
     }
 
-    /* ✅ Force autofill to match theme (removes yellow) */
+    /* ✅ Fix yellow autofill in email fields */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
@@ -154,6 +152,7 @@
     .kvValue{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .kvValue.right{text-align:right}
 
+    /* login UX */
     .loginCard{max-width:520px;width:100%;padding:18px}
     .loginHeader{text-align:center;margin-bottom:10px}
     .loginForm{max-width:380px;margin:0 auto}
@@ -161,10 +160,8 @@
     .loginMsg{text-align:center;min-height:18px}
 
     .supplierSmall{margin-top:3px;font-size:12px}
-
     .divider{height:1px;background:var(--border2);margin:14px 0;width:100%}
 
-    /* nicer "New order" header */
     .sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .toggleBtn{
       padding:6px 10px;
@@ -181,7 +178,7 @@
     .tdStatus{padding:10px 12px;text-align:right}
     .statusWrap{display:flex;justify-content:flex-end;align-items:center}
 
-    /* completed search looks more subtle */
+    /* completed search less visible */
     #completedSearch{
       background:var(--fieldBg2);
       border-color:rgba(15,23,42,.10);
@@ -340,9 +337,659 @@
 </section>
 
 <script>
-/* ===== Keep your current JS as-is (paste your existing script here) =====
-   This HTML update is purely UX/CSS improvements + mail field autofill fix.
-*/
+const API_BASE = "https://script.google.com/macros/s/AKfycbz1gFMihzIhsuapAKy1hMVmKlj6sLpcln4xaGYB4eWG-eGebJlsXFJ9aV0nJ5jWEiHCzw/exec";
+const MASTER_SUPPLIER_NAME = "ALL";
+
+const $ = (id) => document.getElementById(id);
+
+const loginView = $("loginView");
+const portalView = $("portalView");
+
+const keyInput = $("keyInput");
+const loginBtn = $("loginBtn");
+const clearBtn = $("clearBtn");
+const loginMsg = $("loginMsg");
+
+const reloadBtn = $("reloadBtn");
+const logoutBtn = $("logoutBtn");
+
+const tbody = $("tbody");
+const noSelection = $("noSelection");
+const form = $("form");
+
+const statusBadge = $("statusBadge");
+const statusText = $("statusText");
+
+const customerLabel = $("customerLabel");
+const orderIdLabel = $("orderIdLabel");
+const carrier = $("carrier");
+const trackingNumber = $("trackingNumber");
+const trackingLink = $("trackingLink");
+
+const saveBtn = $("saveBtn");
+const mailCustomerBtn = $("mailCustomerBtn");
+const appleMailBtn = $("appleMailBtn");
+const msg = $("msg");
+
+/* new order */
+const newOrderCard = $("newOrderCard");
+const toggleNewOrderBtn = $("toggleNewOrderBtn");
+const newOrderBody = $("newOrderBody");
+const newCustomer = $("newCustomer");
+const newMailCustomer = $("newMailCustomer");
+const newSupplier = $("newSupplier");
+const newOrderId = $("newOrderId");
+const createBtn = $("createBtn");
+const createMsg = $("createMsg");
+
+/* completed */
+const completedWrap = $("completedWrap");
+const completedSearch = $("completedSearch");
+const completedTbody = $("completedTbody");
+
+let supplier = "";
+let supplierKey = "";
+let orders = [];
+let selected = null;
+
+let completedRowIds = new Set();
+let completedOrders = [];
+
+function escapeHTML(s){
+  return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+}
+function isMasterLogin(){
+  return String(supplier || "").trim().toLowerCase() === String(MASTER_SUPPLIER_NAME).toLowerCase();
+}
+function isComplete(o){
+  return !!(o.Carrier && o.Trackingnumber && o.Trackinglink);
+}
+function setStatus(text, ok){
+  statusBadge.classList.remove("ready","missing");
+  statusBadge.classList.add(ok ? "ready" : "missing");
+  statusText.textContent = text;
+}
+function showLogin(){
+  portalView.classList.add("hidden");
+  loginView.classList.remove("hidden");
+  loginMsg.textContent = "";
+  keyInput.value = "";
+  setTimeout(()=> keyInput.focus(), 50);
+}
+function showPortal(){
+  loginView.classList.add("hidden");
+  portalView.classList.remove("hidden");
+}
+function jsonp(url){
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Math.random().toString(36).slice(2);
+    const script = document.createElement("script");
+
+    window[cb] = (data) => {
+      try { delete window[cb]; } catch(_) {}
+      script.remove();
+      resolve(data);
+    };
+
+    script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb;
+    script.onerror = () => {
+      try { delete window[cb]; } catch(_) {}
+      script.remove();
+      reject(new Error("JSONP failed"));
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+function normalizeKey(k){
+  return String(k || "").trim().toLowerCase().replace(/\s+/g," ");
+}
+function getAny(obj, wantedKeys){
+  if(!obj) return "";
+  const map = {};
+  for (const k of Object.keys(obj)) map[normalizeKey(k)] = k;
+  for (const want of wantedKeys){
+    const hit = map[normalizeKey(want)];
+    if(hit){
+      const v = obj[hit];
+      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+  }
+  return "";
+}
+function sortNewestFirst(arr){
+  return (arr || []).slice().sort((a,b)=> Number(b.rowId||0) - Number(a.rowId||0));
+}
+
+function openGmailOrMailto(to, subject, body){
+  const gmailUrl =
+    "https://mail.google.com/mail/?view=cm&fs=1" +
+    `&to=${encodeURIComponent(to)}` +
+    `&su=${encodeURIComponent(subject)}` +
+    `&body=${encodeURIComponent(body)}`;
+
+  const w = window.open(gmailUrl, "_blank", "noopener,noreferrer");
+  if (!w) {
+    const mailtoUrl =
+      "mailto:" + encodeURIComponent(to) +
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+  }
+}
+
+function getSupplierKeyFromUrl(){
+  const parts = window.location.pathname.split("/").filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : "";
+}
+
+/* Completed storage */
+function completedStorageKey(){ return "completed_rows_master"; }
+function loadCompletedFromStorage(){
+  completedRowIds = new Set();
+  completedOrders = [];
+  try{
+    const raw = localStorage.getItem(completedStorageKey()) || "[]";
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)){
+      for(const n of arr){
+        const id = Number(n);
+        if(id) completedRowIds.add(id);
+      }
+    }
+  }catch(_){}
+}
+function saveCompletedToStorage(){
+  try{
+    localStorage.setItem(completedStorageKey(), JSON.stringify(Array.from(completedRowIds)));
+  }catch(_){}
+}
+function markRowCompleted(row){
+  if(!row || !row.rowId) return;
+
+  completedRowIds.add(Number(row.rowId));
+  saveCompletedToStorage();
+
+  orders = orders.filter(x => Number(x.rowId) !== Number(row.rowId));
+  const exists = completedOrders.some(x => Number(x.rowId) === Number(row.rowId));
+  if(!exists) completedOrders.unshift(row);
+
+  renderOrders();
+  renderCompleted();
+}
+
+/* ---- Login ---- */
+async function doLogin(){
+  const key = keyInput.value.trim();
+  if(!key){
+    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter password.</span>";
+    return;
+  }
+  await loginWithKey(key, true);
+}
+
+async function loginWithKey(key, showErrors){
+  loginBtn.disabled = true;
+  loginMsg.textContent = showErrors ? "Checking…" : "";
+
+  try{
+    const data = await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`);
+    if(!data || !data.ok || !data.supplier){
+      if(showErrors) loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid password.</span>";
+      return false;
+    }
+
+    supplierKey = key;
+    supplier = String(data.supplier).trim();
+
+    sessionStorage.setItem("supplier_key", supplierKey);
+    sessionStorage.setItem("supplier_name", supplier);
+
+    showPortal();
+
+    newOrderCard.classList.toggle("hidden", !isMasterLogin());
+    completedWrap.classList.toggle("hidden", !isMasterLogin());
+
+    if(isMasterLogin()){
+      loadCompletedFromStorage();
+      await loadSuppliers();
+      expandNewOrder(false);
+    }
+
+    await loadOrders();
+    return true;
+  }catch(e){
+    if(showErrors) loginMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
+    return false;
+  }finally{
+    loginBtn.disabled = false;
+  }
+}
+
+/* suppliers */
+async function loadSuppliers(){
+  newSupplier.innerHTML = "";
+  try{
+    const data = await jsonp(`${API_BASE}?action=suppliers`);
+    if(!data || !data.ok) return;
+
+    const list = data.suppliers || [];
+    for(const s of list){
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      newSupplier.appendChild(opt);
+    }
+  }catch(_){}
+}
+
+/* ---- Load orders ---- */
+async function loadOrders(){
+  selected = null;
+  form.classList.add("hidden");
+  noSelection.classList.remove("hidden");
+  customerLabel.textContent = "—";
+  orderIdLabel.textContent = "—";
+  msg.textContent = "";
+
+  tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
+
+  const url = isMasterLogin()
+    ? `${API_BASE}?action=orders&supplier=ALL`
+    : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
+
+  const data = await jsonp(url);
+
+  if(!data || !data.ok){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
+    return;
+  }
+
+  const all = data.orders || [];
+
+  if(isMasterLogin()){
+    const open = [];
+    const done = [];
+    for(const o of all){
+      const id = Number(o.rowId);
+      if(completedRowIds.has(id)) done.push(o);
+      else open.push(o);
+    }
+    orders = sortNewestFirst(open);
+    completedOrders = sortNewestFirst(done);
+    renderOrders();
+    renderCompleted();
+  }else{
+    orders = sortNewestFirst(all);
+    renderOrders();
+  }
+
+  setStatus("No selection", false);
+}
+
+function renderOrders(){
+  if(!orders.length){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
+    return;
+  }
+
+  const master = isMasterLogin();
+  tbody.innerHTML = "";
+
+  for(const o of orders){
+    const ok = isComplete(o);
+    const supplierName = getAny(o, ["Supplier"]);
+    const orderId = getAny(o, ["Order ID","OrderID"]);
+
+    const supplierLine = master && supplierName ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>` : "";
+    const orderIdLine = orderId ? `<div class="muted supplierSmall">${escapeHTML(orderId)}</div>` : "";
+
+    const mailSupplierBtnHtml = master
+      ? `<button class="btn" data-mailsupplier="${escapeHTML(o.rowId)}">Mail supplier</button>`
+      : "";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="custOneLine">${escapeHTML(getAny(o, ["Customer"]))}</div>
+        ${supplierLine}
+        ${orderIdLine}
+      </td>
+      <td class="tdStatus">
+        <div class="statusWrap">
+          <span class="status ${ok ? "ready":"missing"}">
+            <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div class="cellActions">
+          <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+          ${mailSupplierBtnHtml}
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  tbody.querySelectorAll("button[data-open]").forEach(btn=>{
+    btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
+  });
+
+  tbody.querySelectorAll("button[data-mailsupplier]").forEach(btn=>{
+    btn.addEventListener("click", ()=> mailSupplierRow(Number(btn.dataset.mailsupplier)));
+  });
+}
+
+function openRow(rowId){
+  selected = orders.find(x => Number(x.rowId) === rowId) || completedOrders.find(x => Number(x.rowId) === rowId) || null;
+  if(!selected) return;
+
+  customerLabel.textContent = getAny(selected, ["Customer"]) || "—";
+  orderIdLabel.textContent = getAny(selected, ["Order ID","OrderID"]) || "—";
+
+  carrier.value = getAny(selected, ["Carrier"]) || "";
+  trackingNumber.value = getAny(selected, ["Trackingnumber","Tracking Number"]) || "";
+  trackingLink.value = getAny(selected, ["Trackinglink","Tracking Link"]) || "";
+
+  noSelection.classList.add("hidden");
+  form.classList.remove("hidden");
+  msg.textContent = "";
+
+  const ok = isComplete(selected);
+  setStatus(ok ? "Complete" : "Missing tracking", ok);
+
+  const master = isMasterLogin();
+  mailCustomerBtn.classList.toggle("hidden", !master);
+  appleMailBtn.classList.toggle("hidden", !master);
+}
+
+/* completed */
+function renderCompleted(){
+  if(!isMasterLogin()) return;
+
+  const q = (completedSearch.value || "").trim().toLowerCase();
+  const filtered = completedOrders.filter(o=>{
+    const c = getAny(o, ["Customer"]).toLowerCase();
+    const id = getAny(o, ["Order ID","OrderID"]).toLowerCase();
+    return !q || c.includes(q) || id.includes(q);
+  });
+
+  if(!filtered.length){
+    completedTbody.innerHTML = `<tr><td colspan="2" class="muted">No completed orders yet.</td></tr>`;
+    return;
+  }
+
+  completedTbody.innerHTML = "";
+  for(const o of filtered){
+    const supplierName = getAny(o, ["Supplier"]);
+    const orderId = getAny(o, ["Order ID","OrderID"]);
+
+    const supplierLine = supplierName ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>` : "";
+    const orderIdLine = orderId ? `<div class="muted supplierSmall">${escapeHTML(orderId)}</div>` : "";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="custOneLine">${escapeHTML(getAny(o, ["Customer"]))}</div>
+        ${supplierLine}
+        ${orderIdLine}
+      </td>
+      <td style="white-space:nowrap">
+        <button class="btn" data-copen="${escapeHTML(o.rowId)}">Open</button>
+      </td>
+    `;
+    completedTbody.appendChild(tr);
+  }
+
+  completedTbody.querySelectorAll("button[data-copen]").forEach(btn=>{
+    btn.addEventListener("click", ()=> openRow(Number(btn.dataset.copen)));
+  });
+}
+
+/* save */
+async function save(){
+  if(!selected) return;
+
+  const Carrier = carrier.value.trim();
+  const Trackingnumber = trackingNumber.value.trim();
+  const Trackinglink = trackingLink.value.trim();
+
+  if(!Carrier || !Trackingnumber || !Trackinglink){
+    msg.innerHTML = "<span style='color:var(--warn)'>Please fill in all fields.</span>";
+    return;
+  }
+
+  saveBtn.disabled = true;
+  msg.textContent = "Saving…";
+
+  try{
+    const url =
+      `${API_BASE}?action=update` +
+      `&rowId=${encodeURIComponent(selected.rowId)}` +
+      `&supplier=${encodeURIComponent(supplier)}` +
+      `&supplierKey=${encodeURIComponent(supplierKey)}` +
+      `&Carrier=${encodeURIComponent(Carrier)}` +
+      `&Trackingnumber=${encodeURIComponent(Trackingnumber)}` +
+      `&Trackinglink=${encodeURIComponent(Trackinglink)}`;
+
+    const data = await jsonp(url);
+
+    if(data && data.ok){
+      selected.Carrier = Carrier;
+      selected.Trackingnumber = Trackingnumber;
+      selected.Trackinglink = Trackinglink;
+      renderOrders();
+      setStatus("Complete", true);
+      msg.innerHTML = "<span style='color:var(--ok)'>Saved ✓</span>";
+    } else {
+      msg.innerHTML = "<span style='color:var(--bad)'>Save failed.</span>";
+    }
+  }catch(e){
+    msg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
+  }finally{
+    saveBtn.disabled = false;
+  }
+}
+
+/* mail customer */
+function mailCustomer(useApple){
+  if(!isMasterLogin() || !selected) return;
+
+  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
+  const customerName = getAny(selected, ["Customer"]);
+  const orderId = getAny(selected, ["Order ID","OrderID"]);
+
+  if(!to){
+    msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
+    return;
+  }
+
+  const Carrier = carrier.value.trim() || getAny(selected, ["Carrier"]);
+  const Trackingnumber = trackingNumber.value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]);
+  const Trackinglink = trackingLink.value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]);
+
+  const subject = `Tracking details – Order ${orderId || ""}`.trim();
+  const body =
+`Hi ${customerName || "there"},
+
+Here are your shipment details:
+
+Order ID: ${orderId || "-"}
+Carrier: ${Carrier || "-"}
+Tracking number: ${Trackingnumber || "-"}
+Tracking link: ${Trackinglink || "-"}
+
+Kind regards`;
+
+  if(!completedRowIds.has(Number(selected.rowId))){
+    markRowCompleted({ ...selected });
+  }
+
+  if(useApple){
+    window.location.href =
+      "mailto:" + encodeURIComponent(to) +
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+  } else {
+    openGmailOrMailto(to, subject, body);
+  }
+}
+
+/* mail supplier */
+function mailSupplierRow(rowId){
+  if(!isMasterLogin()) return;
+  const row = orders.find(x => Number(x.rowId) === Number(rowId));
+  if(!row){
+    msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>";
+    return;
+  }
+
+  const to = getAny(row, ["Mail Supplier","MailSupplier"]);
+  const supplierName = getAny(row, ["Supplier"]);
+  const customerName = getAny(row, ["Customer"]);
+  const orderId = getAny(row, ["Order ID","OrderID"]);
+
+  if(!to){
+    msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found for this row (Mail Supplier).</span>";
+    return;
+  }
+
+  const subject = `Tracking needed – Order ${orderId || ""}`.trim();
+  const body =
+`Hi ${supplierName || "there"},
+
+Could you please provide the shipment details for the order below?
+
+Customer: ${customerName || "-"}
+Order ID: ${orderId || "-"}
+
+Please reply with:
+- Carrier
+- Tracking number
+- Tracking link
+
+Thank you!`;
+
+  openGmailOrMailto(to, subject, body);
+}
+
+/* new order */
+function expandNewOrder(open){
+  newOrderBody.classList.toggle("hidden", !open);
+  toggleNewOrderBtn.textContent = open ? "–" : "+";
+  toggleNewOrderBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+toggleNewOrderBtn.addEventListener("click", ()=>{
+  const isOpen = !newOrderBody.classList.contains("hidden");
+  expandNewOrder(!isOpen);
+});
+
+async function createOrder(){
+  if(!isMasterLogin()) return;
+
+  const Customer = newCustomer.value.trim();
+  const MailCustomer = newMailCustomer.value.trim();
+  const Supplier = newSupplier.value.trim();
+  const OrderID = newOrderId.value.trim();
+
+  if(!Customer || !MailCustomer || !Supplier || !OrderID){
+    createMsg.innerHTML = "<span style='color:var(--warn)'>Please fill in all fields.</span>";
+    return;
+  }
+
+  createBtn.disabled = true;
+  createMsg.textContent = "Adding…";
+
+  try{
+    const url =
+      `${API_BASE}?action=create` +
+      `&supplierKey=${encodeURIComponent(supplierKey)}` +
+      `&Customer=${encodeURIComponent(Customer)}` +
+      `&MailCustomer=${encodeURIComponent(MailCustomer)}` +
+      `&Supplier=${encodeURIComponent(Supplier)}` +
+      `&OrderID=${encodeURIComponent(OrderID)}`;
+
+    const data = await jsonp(url);
+
+    if(data && data.ok){
+      createMsg.innerHTML = "<span style='color:var(--ok)'>Added ✓</span>";
+      newCustomer.value = "";
+      newMailCustomer.value = "";
+      newOrderId.value = "";
+      await loadOrders();
+    } else {
+      createMsg.innerHTML = `<span style='color:var(--bad)'>Failed: ${escapeHTML((data && data.error) || "Error")}</span>`;
+    }
+  }catch(e){
+    createMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
+  }finally{
+    createBtn.disabled = false;
+  }
+}
+
+/* logout */
+function logout(){
+  supplier = "";
+  supplierKey = "";
+  orders = [];
+  selected = null;
+  sessionStorage.removeItem("supplier_key");
+  sessionStorage.removeItem("supplier_name");
+  showLogin();
+}
+
+/* events */
+loginBtn.addEventListener("click", doLogin);
+clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
+keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+
+reloadBtn.addEventListener("click", loadOrders);
+logoutBtn.addEventListener("click", logout);
+saveBtn.addEventListener("click", save);
+
+mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
+appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
+
+createBtn && createBtn.addEventListener("click", createOrder);
+completedSearch && completedSearch.addEventListener("input", renderCompleted);
+
+/* init */
+(async function init(){
+  const keyFromPath = getSupplierKeyFromUrl();
+
+  // if URL ends with supplierKey (KB26 etc), auto-login silently
+  if(keyFromPath && keyFromPath.toLowerCase() !== "tracking" && keyFromPath.toLowerCase() !== "index.html"){
+    const ok = await loginWithKey(keyFromPath, false);
+    if(ok) return;
+
+    showLogin();
+    loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid or expired link.</span>";
+    return;
+  }
+
+  const k = sessionStorage.getItem("supplier_key") || "";
+  const s = sessionStorage.getItem("supplier_name") || "";
+  if(k && s){
+    supplierKey = k;
+    supplier = s;
+    showPortal();
+
+    newOrderCard.classList.toggle("hidden", !isMasterLogin());
+    completedWrap.classList.toggle("hidden", !isMasterLogin());
+
+    if(isMasterLogin()){
+      loadCompletedFromStorage();
+      await loadSuppliers();
+      expandNewOrder(false);
+    }
+
+    loadOrders();
+  } else {
+    showLogin();
+  }
+})();
 </script>
 </body>
 </html>
