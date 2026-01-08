@@ -15,11 +15,11 @@
     .card{background:var(--card);border:1px solid rgba(34,49,88,.8);border-radius:16px;padding:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
-    input, select{
+    input,select{
       width:100%;border:1px solid rgba(34,49,88,.9);background:#0d1429;color:var(--text);
       padding:10px 12px;border-radius:12px;outline:none
     }
-    input:focus, select:focus{border-color:rgba(79,140,255,.8);box-shadow:0 0 0 4px rgba(79,140,255,.15)}
+    input:focus,select:focus{border-color:rgba(79,140,255,.8);box-shadow:0 0 0 4px rgba(79,140,255,.15)}
     .btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
     .btn.primary{background:linear-gradient(135deg,var(--acc),#6d5cff);border-color:transparent}
     .btn:disabled{opacity:.55;cursor:not-allowed}
@@ -128,17 +128,13 @@
 
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
-
-            <!-- ✅ Gmail/default button: NO logo -->
             <button id="mailCustomerBtn" class="btn hidden" type="button">Mail customer</button>
-
-            <!-- ✅ Apple button: keep Apple logo -->
             <button id="appleMailBtn" class="btn hidden" type="button">
               <span class="icon"><span class="appleBadge"></span><span>Mail customer</span></span>
             </button>
           </div>
 
-          <!-- ✅ Master: New order section (dropdown pulls from Suppliers tab) -->
+          <!-- ✅ MASTER: New order -->
           <div id="newOrderBox" class="hidden">
             <div class="divider"></div>
             <div class="sectionTitle">New order (master)</div>
@@ -187,7 +183,7 @@
 </section>
 
 <script>
-const API_BASE = "https://script.google.com/macros/s/AKfycbyejR_JUneBsYVihtEHkwFl3N-eZdWwAp6ZCUNW3UH3SfeRCvRVZdpezKaO5ukGLwGaHw/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbytf3hGok1FdADtNXy86GYQM0cn1ECS2cAys__Dtq5zpw7LMTk2-oSC4wnxKdAJj-zb/exec";
 const MASTER_SUPPLIER_NAME = "ALL";
 
 const $ = (id) => document.getElementById(id);
@@ -220,7 +216,7 @@ const mailCustomerBtn = $("mailCustomerBtn");
 const appleMailBtn = $("appleMailBtn");
 const msg = $("msg");
 
-// master new order UI
+// master new order
 const newOrderBox = $("newOrderBox");
 const newCustomer = $("newCustomer");
 const newMailCustomer = $("newMailCustomer");
@@ -233,8 +229,6 @@ let supplier = "";
 let supplierKey = "";
 let orders = [];
 let selected = null;
-
-let suppliersList = []; // from Suppliers tab
 
 function escapeHTML(s){
   return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
@@ -317,7 +311,7 @@ function openGmailOrMailto(to, subject, body){
   }
 }
 
-/* ✅ load suppliers from Apps Script (Suppliers tab) */
+/* ✅ load suppliers for dropdown */
 async function loadSuppliers(){
   try{
     newSupplier.innerHTML = `<option value="">Loading suppliers…</option>`;
@@ -326,14 +320,14 @@ async function loadSuppliers(){
       newSupplier.innerHTML = `<option value="">Could not load suppliers</option>`;
       return;
     }
-    suppliersList = data.suppliers || [];
-    if(!suppliersList.length){
+    const list = data.suppliers || [];
+    if(!list.length){
       newSupplier.innerHTML = `<option value="">No suppliers found</option>`;
       return;
     }
     newSupplier.innerHTML =
       `<option value="">Select supplier…</option>` +
-      suppliersList.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join("");
+      list.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join("");
   }catch(e){
     newSupplier.innerHTML = `<option value="">Could not load suppliers</option>`;
   }
@@ -366,7 +360,6 @@ async function doLogin(){
 
     showPortal();
 
-    // master-only: show new order + load supplier dropdown
     newOrderBox.classList.toggle("hidden", !isMasterLogin());
     if(isMasterLogin()) loadSuppliers();
 
@@ -606,11 +599,7 @@ Thank you!`;
   openGmailOrMailto(to, subject, body);
 }
 
-/* ---- NEW ORDER (placeholder: requires Apps Script action=create) ----
-   You already asked earlier for "new order" via master.
-   This UI + dropdown is ready. When you add Apps Script create endpoint,
-   wire it here.
-*/
+/* ✅ NEW: Create order (wired to Apps Script action=create) */
 async function createOrder(){
   newOrderMsg.textContent = "";
   if(!isMasterLogin()){
@@ -628,8 +617,36 @@ async function createOrder(){
     return;
   }
 
-  // If you already have a create endpoint, adjust action + params here.
-  newOrderMsg.innerHTML = "<span class='muted'>Create endpoint not connected yet.</span>";
+  createOrderBtn.disabled = true;
+  newOrderMsg.textContent = "Adding…";
+
+  try{
+    const url =
+      `${API_BASE}?action=create` +
+      `&supplierKey=${encodeURIComponent(supplierKey)}` +
+      `&Customer=${encodeURIComponent(Customer)}` +
+      `&MailCustomer=${encodeURIComponent(MailCustomer)}` +
+      `&Supplier=${encodeURIComponent(Supplier)}` +
+      `&OrderID=${encodeURIComponent(OrderID)}`;
+
+    const data = await jsonp(url);
+
+    if(data && data.ok){
+      newOrderMsg.innerHTML = "<span style='color:var(--ok)'>Added ✓</span>";
+      newCustomer.value = "";
+      newMailCustomer.value = "";
+      newSupplier.value = "";
+      newOrderId.value = "";
+      await loadOrders();
+    } else {
+      newOrderMsg.innerHTML =
+        `<span style='color:var(--bad)'>Failed: ${escapeHTML((data && data.error) || "Error")}</span>`;
+    }
+  }catch(e){
+    newOrderMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
+  }finally{
+    createOrderBtn.disabled = false;
+  }
 }
 
 /* ---- Logout ---- */
@@ -649,16 +666,15 @@ clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 
 reloadBtn.addEventListener("click", async ()=>{
-  // master: refresh suppliers too (dropdown stays up to date)
   if(isMasterLogin()) loadSuppliers();
   loadOrders();
 });
-
 logoutBtn.addEventListener("click", logout);
 saveBtn.addEventListener("click", save);
 
 mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
 appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
+
 createOrderBtn.addEventListener("click", createOrder);
 
 (function init(){
