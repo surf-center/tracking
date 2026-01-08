@@ -57,9 +57,16 @@
     .icon{display:inline-flex;align-items:center;gap:8px}
     .appleBadge{font-size:14px;line-height:1;opacity:.9;margin-right:2px}
 
-    /* master new order */
-    .divider{height:1px;background:rgba(34,49,88,.7);margin:14px 0}
-    .sectionTitle{font-weight:700;font-size:13px;color:var(--muted);margin:0 0 6px}
+    /* master new order card */
+    .cardHeaderRow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+    .cardTitle{font-weight:700;font-size:13px;color:var(--muted);margin:0}
+    .toggleBtn{display:inline-flex;align-items:center;gap:8px}
+    .togglePlus{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:10px;border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);cursor:pointer}
+    .togglePlus:active{transform:translateY(1px)}
+    .sectionDivider{height:1px;background:rgba(34,49,88,.7);margin:10px 0}
+
+    /* table section labels */
+    .sectionRow td{background:#0d1429;color:var(--muted);font-weight:700}
   </style>
 </head>
 <body>
@@ -98,6 +105,7 @@
     </header>
 
     <div class="two">
+      <!-- LEFT column -->
       <section class="card">
         <div class="row" style="justify-content:flex-end">
           <span id="statusBadge" class="status missing"><span class="dot"></span><span id="statusText">No selection</span></span>
@@ -134,37 +142,48 @@
             </button>
           </div>
 
-          <!-- ✅ MASTER: New order -->
-          <div id="newOrderBox" class="hidden">
-            <div class="divider"></div>
-            <div class="sectionTitle">New order (master)</div>
-
-            <label>Customer</label>
-            <input id="newCustomer" placeholder="Customer name" />
-
-            <label>Mail Customer</label>
-            <input id="newMailCustomer" placeholder="customer@email.com" />
-
-            <label>Supplier</label>
-            <select id="newSupplier">
-              <option value="">Loading suppliers…</option>
-            </select>
-
-            <label>Order ID</label>
-            <input id="newOrderId" placeholder="Order ID" />
-
-            <div class="row" style="margin-top:12px">
-              <button id="createOrderBtn" class="btn" type="button">+ Add order</button>
-            </div>
-
-            <div class="hint" id="newOrderMsg"></div>
-          </div>
-
           <div class="hint" id="msg"></div>
         </div>
       </section>
 
+      <!-- RIGHT column -->
       <section class="card">
+        <!-- ✅ master new order as separate block/card area inside right panel -->
+        <div id="newOrderCard" class="hidden" style="margin-bottom:12px">
+          <div class="card" style="padding:12px">
+            <div class="cardHeaderRow">
+              <div class="cardTitle">New order (master)</div>
+              <button id="toggleNewOrderBtn" class="togglePlus" type="button" aria-expanded="false" title="Toggle new order">
+                +
+              </button>
+            </div>
+
+            <div id="newOrderBody" class="hidden">
+              <div class="sectionDivider"></div>
+
+              <label>Customer</label>
+              <input id="newCustomer" placeholder="Customer name" />
+
+              <label>Mail Customer</label>
+              <input id="newMailCustomer" placeholder="customer@email.com" />
+
+              <label>Supplier</label>
+              <select id="newSupplier">
+                <option value="">Loading suppliers…</option>
+              </select>
+
+              <label>Order ID</label>
+              <input id="newOrderId" placeholder="Order ID" />
+
+              <div class="row" style="margin-top:12px">
+                <button id="createOrderBtn" class="btn" type="button">+ Add order</button>
+              </div>
+
+              <div class="hint" id="newOrderMsg"></div>
+            </div>
+          </div>
+        </div>
+
         <table class="table">
           <thead>
             <tr>
@@ -183,7 +202,7 @@
 </section>
 
 <script>
-const API_BASE = "https://script.google.com/macros/s/AKfycbyhDbrjXXwfnJb9i7sgKJV8slf1oy_4MO0sm5cerIKXHTu3141CaZyTnGD0sjqDPAcb3A/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbytf3hGok1FdADtNXy86GYQM0cn1ECS2cAys__Dtq5zpw7LMTk2-oSC4wnxKdAJj-zb/exec";
 const MASTER_SUPPLIER_NAME = "ALL";
 
 const $ = (id) => document.getElementById(id);
@@ -216,8 +235,10 @@ const mailCustomerBtn = $("mailCustomerBtn");
 const appleMailBtn = $("appleMailBtn");
 const msg = $("msg");
 
-// master new order
-const newOrderBox = $("newOrderBox");
+// master new order UI (now right column)
+const newOrderCard = $("newOrderCard");
+const toggleNewOrderBtn = $("toggleNewOrderBtn");
+const newOrderBody = $("newOrderBody");
 const newCustomer = $("newCustomer");
 const newMailCustomer = $("newMailCustomer");
 const newSupplier = $("newSupplier");
@@ -230,6 +251,14 @@ let supplierKey = "";
 let orders = [];
 let selected = null;
 
+// ✅ local UI state: mark mailed rows as completed (persists per browser)
+const mailedKey = "mailed_rows_v1";
+const mailedSet = new Set(JSON.parse(localStorage.getItem(mailedKey) || "[]"));
+function markMailed(rowId){
+  mailedSet.add(String(rowId));
+  localStorage.setItem(mailedKey, JSON.stringify(Array.from(mailedSet)));
+}
+
 function escapeHTML(s){
   return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
 }
@@ -238,6 +267,10 @@ function isMasterLogin(){
 }
 function isComplete(o){
   return !!(o.Carrier && o.Trackingnumber && o.Trackinglink);
+}
+function isRowCompletedUI(o){
+  // completed if tracking complete OR mailed customer clicked
+  return isComplete(o) || mailedSet.has(String(o.rowId));
 }
 function setStatus(text, ok){
   statusBadge.classList.remove("ready","missing");
@@ -360,7 +393,8 @@ async function doLogin(){
 
     showPortal();
 
-    newOrderBox.classList.toggle("hidden", !isMasterLogin());
+    // master new order card
+    newOrderCard.classList.toggle("hidden", !isMasterLogin());
     if(isMasterLogin()) loadSuppliers();
 
     await loadOrders();
@@ -407,35 +441,55 @@ function renderOrders(){
   const master = isMasterLogin();
   tbody.innerHTML = "";
 
-  for(const o of orders){
-    const ok = isComplete(o);
-    const supplierName = getAny(o, ["Supplier"]);
+  // ✅ split: active vs completed (UI)
+  const active = [];
+  const completed = [];
+  for (const o of orders){
+    (isRowCompletedUI(o) ? completed : active).push(o);
+  }
 
-    const supplierLine = master && supplierName
-      ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
-      : "";
+  function renderList(list, sectionLabel){
+    if(sectionLabel){
+      const trSec = document.createElement("tr");
+      trSec.className = "sectionRow";
+      trSec.innerHTML = `<td colspan="3">${escapeHTML(sectionLabel)}</td>`;
+      tbody.appendChild(trSec);
+    }
 
-    const mailSupplierBtnHtml = master
-      ? `<button class="btn" data-mailsupplier="${escapeHTML(o.rowId)}">Mail supplier</button>`
-      : "";
+    for(const o of list){
+      const ok = isComplete(o);
+      const supplierName = getAny(o, ["Supplier"]);
+      const supplierLine = master && supplierName
+        ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
+        : "";
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <div style="font-weight:600">${escapeHTML(getAny(o, ["Customer"]))}</div>
-        ${supplierLine}
-      </td>
-      <td>
-        <span class="status ${ok ? "ready":"missing"}">
-          <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
-        </span>
-      </td>
-      <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start">
-        <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-        ${mailSupplierBtnHtml}
-      </td>
-    `;
-    tbody.appendChild(tr);
+      const mailSupplierBtnHtml = master
+        ? `<button class="btn" data-mailsupplier="${escapeHTML(o.rowId)}">Mail supplier</button>`
+        : "";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <div style="font-weight:600">${escapeHTML(getAny(o, ["Customer"]))}</div>
+          ${supplierLine}
+        </td>
+        <td>
+          <span class="status ${ok ? "ready":"missing"}">
+            <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
+          </span>
+        </td>
+        <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start">
+          <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+          ${mailSupplierBtnHtml}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  renderList(active, null);
+  if(completed.length){
+    renderList(completed, "Completed");
   }
 
   tbody.querySelectorAll("button[data-open]").forEach(btn=>{
@@ -523,8 +577,6 @@ function mailCustomer(useApple){
   const customerName = getAny(selected, ["Customer"]);
   const orderId = getAny(selected, ["Order ID","OrderID"]);
 
-  msg.innerHTML = `<span class="muted">Mail customer to: ${escapeHTML(to || "(not found)")}</span>`;
-
   if(!to){
     msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
     return;
@@ -546,6 +598,10 @@ Tracking number: ${Trackingnumber || "-"}
 Tracking link: ${Trackinglink || "-"}
 
 Kind regards`;
+
+  // ✅ mark as "completed" in UI immediately after click
+  markMailed(selected.rowId);
+  renderOrders();
 
   if(useApple){
     const mailtoUrl =
@@ -573,8 +629,6 @@ function mailSupplierRow(rowId){
   const customerName = getAny(row, ["Customer"]);
   const orderId = getAny(row, ["Order ID","OrderID"]);
 
-  msg.innerHTML = `<span class="muted">Mail supplier to: ${escapeHTML(to || "(not found)")}</span>`;
-
   if(!to){
     msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found for this row (Mail Supplier).</span>";
     return;
@@ -599,7 +653,7 @@ Thank you!`;
   openGmailOrMailto(to, subject, body);
 }
 
-/* ✅ NEW: Create order (wired to Apps Script action=create) */
+/* ✅ Create order */
 async function createOrder(){
   newOrderMsg.textContent = "";
   if(!isMasterLogin()){
@@ -660,6 +714,14 @@ function logout(){
   showLogin();
 }
 
+/* ---- UI: toggle new order ---- */
+function toggleNewOrder(){
+  const isOpen = !newOrderBody.classList.contains("hidden");
+  newOrderBody.classList.toggle("hidden", isOpen);
+  toggleNewOrderBtn.textContent = isOpen ? "+" : "–";
+  toggleNewOrderBtn.setAttribute("aria-expanded", String(!isOpen));
+}
+
 /* ---- Events ---- */
 loginBtn.addEventListener("click", doLogin);
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
@@ -676,6 +738,7 @@ mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
 appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
 
 createOrderBtn.addEventListener("click", createOrder);
+toggleNewOrderBtn.addEventListener("click", toggleNewOrder);
 
 (function init(){
   const k = sessionStorage.getItem("supplier_key") || "";
@@ -684,8 +747,14 @@ createOrderBtn.addEventListener("click", createOrder);
     supplierKey = k;
     supplier = s;
     showPortal();
-    newOrderBox.classList.toggle("hidden", !isMasterLogin());
-    if(isMasterLogin()) loadSuppliers();
+    newOrderCard.classList.toggle("hidden", !isMasterLogin());
+    if(isMasterLogin()){
+      loadSuppliers();
+      // default collapsed
+      newOrderBody.classList.add("hidden");
+      toggleNewOrderBtn.textContent = "+";
+      toggleNewOrderBtn.setAttribute("aria-expanded","false");
+    }
     loadOrders();
   } else {
     showLogin();
