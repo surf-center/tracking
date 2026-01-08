@@ -16,10 +16,31 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
     input, select{
-      width:100%;border:1px solid rgba(34,49,88,.9);background:#0d1429;color:var(--text);
-      padding:10px 12px;border-radius:12px;outline:none
+      width:100%;
+      border:1px solid rgba(34,49,88,.9);
+      background:#0d1429;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      outline:none;
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
     }
     input:focus, select:focus{border-color:rgba(79,140,255,.8);box-shadow:0 0 0 4px rgba(79,140,255,.15)}
+    /* remove glossy dropdown arrow styling differences */
+    select{
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+      background-size:6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+      padding-right:34px;
+    }
+
     .btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
     .btn.primary{background:linear-gradient(135deg,var(--acc),#6d5cff);border-color:transparent}
     .btn:disabled{opacity:.55;cursor:not-allowed}
@@ -50,7 +71,7 @@
     .loginActions{justify-content:center}
     .loginMsg{text-align:center;min-height:18px}
 
-    /* supplier small line under customer (master only) */
+    /* small lines in table rows */
     .supplierSmall{margin-top:3px;font-size:12px}
 
     /* icon text helpers */
@@ -138,7 +159,6 @@
         <div id="noSelection" class="hint">Open an order from the table.</div>
 
         <div id="form" class="hidden">
-          <!-- ✅ Status moved here (under customer/order block) -->
           <div class="row" style="justify-content:flex-end;margin-bottom:10px">
             <span id="statusBadge" class="status missing"><span class="dot"></span><span id="statusText">No selection</span></span>
           </div>
@@ -180,14 +200,13 @@
         <table class="table">
           <thead>
             <tr>
-              <th style="width:44%">Customer</th>
-              <th style="width:18%">Order ID</th>
-              <th style="width:18%">Status</th>
-              <th style="width:20%">Action</th>
+              <th style="width:56%">Customer</th>
+              <th style="width:20%">Status</th>
+              <th style="width:24%">Action</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="4" class="muted">Loading…</td></tr>
+            <tr><td colspan="3" class="muted">Loading…</td></tr>
           </tbody>
         </table>
 
@@ -203,13 +222,12 @@
           <table class="table">
             <thead>
               <tr>
-                <th style="width:52%">Customer</th>
-                <th style="width:18%">Order ID</th>
-                <th style="width:30%">Action</th>
+                <th style="width:72%">Customer</th>
+                <th style="width:28%">Action</th>
               </tr>
             </thead>
             <tbody id="completedTbody">
-              <tr><td colspan="3" class="muted">No completed orders yet.</td></tr>
+              <tr><td colspan="2" class="muted">No completed orders yet.</td></tr>
             </tbody>
           </table>
         </div>
@@ -273,9 +291,6 @@ let supplier = "";
 let supplierKey = "";
 let orders = [];
 let selected = null;
-
-let suppliersList = [];
-let supplierMailMap = {};
 
 // completed
 let completedRowIds = new Set();
@@ -365,7 +380,6 @@ function openGmailOrMailto(to, subject, body){
   }
 }
 
-/* magic link key from path: /tracking/<SUPPLIERKEY> */
 function getSupplierKeyFromUrl(){
   const parts = window.location.pathname.split("/").filter(Boolean);
   return parts.length ? parts[parts.length - 1] : "";
@@ -456,18 +470,13 @@ async function loginWithKey(key, showErrors){
 
 /* ---- Suppliers (dropdown) ---- */
 async function loadSuppliers(){
-  suppliersList = [];
-  supplierMailMap = {};
   newSupplier.innerHTML = "";
-
   try{
     const data = await jsonp(`${API_BASE}?action=suppliers`);
     if(!data || !data.ok) return;
 
-    suppliersList = data.suppliers || [];
-    supplierMailMap = data.mailMap || {};
-
-    for(const s of suppliersList){
+    const list = data.suppliers || [];
+    for(const s of list){
       const opt = document.createElement("option");
       opt.value = s;
       opt.textContent = s;
@@ -485,7 +494,7 @@ async function loadOrders(){
   orderIdLabel.textContent = "—";
   msg.textContent = "";
 
-  tbody.innerHTML = "<tr><td colspan='4' class='muted'>Loading…</td></tr>";
+  tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
   const url = isMasterLogin()
     ? `${API_BASE}?action=orders&supplier=ALL`
@@ -494,7 +503,7 @@ async function loadOrders(){
   const data = await jsonp(url);
 
   if(!data || !data.ok){
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
     return;
   }
 
@@ -519,14 +528,13 @@ async function loadOrders(){
     renderOrders();
   }
 
-  // keep status hidden until a row is opened
   setStatus("No selection", false);
 }
 
 /* ---- Right table render ---- */
 function renderOrders(){
   if(!orders.length){
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">No orders found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
     return;
   }
 
@@ -536,10 +544,14 @@ function renderOrders(){
   for(const o of orders){
     const ok = isComplete(o);
     const supplierName = getAny(o, ["Supplier"]);
-    const orderId = getAny(o, ["Order ID","OrderID"]) || "—";
+    const orderId = getAny(o, ["Order ID","OrderID"]);
 
     const supplierLine = master && supplierName
       ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>`
+      : "";
+
+    const orderIdLine = orderId
+      ? `<div class="muted supplierSmall">${escapeHTML(orderId)}</div>`
       : "";
 
     const mailSupplierBtnHtml = master
@@ -553,8 +565,8 @@ function renderOrders(){
           ${escapeHTML(getAny(o, ["Customer"]))}
         </div>
         ${supplierLine}
+        ${orderIdLine}
       </td>
-      <td>${escapeHTML(orderId)}</td>
       <td>
         <span class="status ${ok ? "ready":"missing"}">
           <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
@@ -577,7 +589,6 @@ function renderOrders(){
   });
 }
 
-/* ---- Open row -> show status under customer/order ---- */
 function openRow(rowId){
   selected = orders.find(x => Number(x.rowId) === rowId) || completedOrders.find(x => Number(x.rowId) === rowId) || null;
   if(!selected) return;
@@ -613,21 +624,27 @@ function renderCompleted(){
   });
 
   if(!filtered.length){
-    completedTbody.innerHTML = `<tr><td colspan="3" class="muted">No completed orders yet.</td></tr>`;
+    completedTbody.innerHTML = `<tr><td colspan="2" class="muted">No completed orders yet.</td></tr>`;
     return;
   }
 
   completedTbody.innerHTML = "";
   for(const o of filtered){
+    const supplierName = getAny(o, ["Supplier"]);
+    const orderId = getAny(o, ["Order ID","OrderID"]);
+
+    const supplierLine = supplierName ? `<div class="muted supplierSmall">${escapeHTML(supplierName)}</div>` : "";
+    const orderIdLine = orderId ? `<div class="muted supplierSmall">${escapeHTML(orderId)}</div>` : "";
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
         <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
           ${escapeHTML(getAny(o, ["Customer"]))}
         </div>
-        <div class="muted supplierSmall">${escapeHTML(getAny(o, ["Supplier"]))}</div>
+        ${supplierLine}
+        ${orderIdLine}
       </td>
-      <td>${escapeHTML(getAny(o, ["Order ID","OrderID"]) || "—")}</td>
       <td style="white-space:nowrap">
         <button class="btn" data-copen="${escapeHTML(o.rowId)}">Open</button>
       </td>
@@ -844,14 +861,13 @@ saveBtn.addEventListener("click", save);
 mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
 appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
 
-createBtn.addEventListener("click", createOrder);
-completedSearch.addEventListener("input", renderCompleted);
+createBtn && createBtn.addEventListener("click", createOrder);
+completedSearch && completedSearch.addEventListener("input", renderCompleted);
 
 /* ---- Init: auto-login via path slug ---- */
 (async function init(){
   const keyFromPath = getSupplierKeyFromUrl();
 
-  // If URL ends with "/tracking" or "/index.html", ignore
   if(keyFromPath && keyFromPath.toLowerCase() !== "tracking" && keyFromPath.toLowerCase() !== "index.html"){
     const ok = await loginWithKey(keyFromPath, false);
     if(ok) return;
