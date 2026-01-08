@@ -72,7 +72,7 @@
     .togglePlus:active{transform:translateY(1px)}
     .sectionDivider{height:1px;background:rgba(34,49,88,.7);margin:10px 0}
 
-    /* ✅ better completed separation */
+    /* better completed separation */
     .sectionSpacer td{padding:0;border-bottom:none;background:transparent}
     .sectionSpacer .line{height:14px;border-bottom:1px solid rgba(34,49,88,.85)}
     .sectionRow td{
@@ -80,6 +80,19 @@
       border-top:1px solid rgba(34,49,88,.9);
       letter-spacing:.2px
     }
+
+    /* ✅ Customer: 1 line + more room */
+    .customerCell{min-width:0}
+    .customerName{
+      font-weight:600;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      display:block;
+      max-width:100%;
+    }
+    .colStatus{width:140px}
+    .colAction{width:220px}
   </style>
 </head>
 <body>
@@ -199,8 +212,8 @@
             <thead>
               <tr>
                 <th>Customer</th>
-                <th style="width:170px">Status</th>
-                <th style="width:260px">Action</th>
+                <th class="colStatus">Status</th>
+                <th class="colAction">Action</th>
               </tr>
             </thead>
             <tbody id="tbody">
@@ -487,8 +500,8 @@ function renderOrders(){
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>
-          <div style="font-weight:600">${escapeHTML(getAny(o, ["Customer"]))}</div>
+        <td class="customerCell">
+          <span class="customerName">${escapeHTML(getAny(o, ["Customer"]))}</span>
           ${supplierLine}
         </td>
         <td>
@@ -508,7 +521,6 @@ function renderOrders(){
   renderList(active, null);
 
   if(master && completed.length){
-    // ✅ stronger separation before Completed
     const spacer = document.createElement("tr");
     spacer.className = "sectionSpacer";
     spacer.innerHTML = `<td colspan="3"><div class="line"></div></td>`;
@@ -676,7 +688,7 @@ Thank you!`;
   openGmailOrMailto(to, subject, body);
 }
 
-/* ✅ Create order: retry unknown action */
+/* ---- Create order (retry unknown action) ---- */
 async function tryCreateWithAction(actionName, payload){
   const url =
     `${API_BASE}?action=${encodeURIComponent(actionName)}` +
@@ -722,7 +734,7 @@ async function createOrder(){
 
       const err = String((data && data.error) || "");
       const unknown = err.toLowerCase().includes("unknown action");
-      if(!unknown) break; // other error -> stop retrying
+      if(!unknown) break;
     }
 
     if(data && data.ok){
