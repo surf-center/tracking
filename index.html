@@ -6,52 +6,138 @@
   <title>Delivery Overview 📦</title>
   <style>
     :root{
-      --bg:#0b1220;--card:#111a2e;--text:#e7eeff;--muted:#93a4c7;--acc:#4f8cff;
-      --ok:#22c55e;--warn:#f59e0b;--bad:#ef4444
+      --bg:#ffffff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --acc:#2563eb;
+      --acc2:#7c3aed;
+      --ok:#16a34a;
+      --warn:#d97706;
+      --bad:#dc2626;
+      --soft:#f8fafc;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text);min-height:100vh}
-    .wrap{max-width:1120px;margin:0 auto;padding:22px 14px}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:linear-gradient(180deg,#ffffff 0%, #f6f7fb 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1120px;margin:0 auto;padding:26px 16px}
     header{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
     h1{font-size:18px;margin:0}
     .sub{color:var(--muted);font-size:13px;line-height:1.4}
-    .card{background:var(--card);border:1px solid rgba(34,49,88,.8);border-radius:16px;padding:14px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 10px 22px rgba(2,6,23,.06);
+    }
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
     input, select{
-      width:100%;border:1px solid rgba(34,49,88,.9);background:#0d1429;color:var(--text);
-      padding:10px 12px;border-radius:12px;outline:none
+      width:100%;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      outline:none
     }
-    input:focus, select:focus{border-color:rgba(79,140,255,.8);box-shadow:0 0 0 4px rgba(79,140,255,.15)}
-    .btn{border:1px solid rgba(34,49,88,.9);background:#0f1730;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer}
-    .btn.primary{background:linear-gradient(135deg,var(--acc),#6d5cff);border-color:transparent}
+    input:focus, select:focus{
+      border-color:rgba(37,99,235,.55);
+      box-shadow:0 0 0 4px rgba(37,99,235,.12)
+    }
+    /* dropdown: remove glossy / keep consistent */
+    select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      background-image:none;
+    }
+
+    .btn{
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer
+    }
+    .btn.primary{
+      background:linear-gradient(135deg,var(--acc),var(--acc2));
+      border-color:transparent;
+      color:#fff;
+    }
     .btn:disabled{opacity:.55;cursor:not-allowed}
 
-    .table{width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;border:1px solid rgba(34,49,88,.8)}
-    .table th,.table td{padding:10px 12px;border-bottom:1px solid rgba(34,49,88,.7);font-size:13px;vertical-align:top;text-align:left}
-    .table th{color:var(--muted);font-weight:600;background:#0d1429}
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    .table th,.table td{
+      padding:10px 12px;
+      border-bottom:1px solid var(--border);
+      font-size:13px;
+      vertical-align:middle;
+      text-align:left;
+    }
+    .table th{
+      color:var(--muted);
+      font-weight:600;
+      background:var(--soft);
+    }
     .table tr:last-child td{border-bottom:none}
 
     .muted{color:var(--muted)}
     .status{
-      display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;
-      border:1px solid rgba(34,49,88,.8);font-size:12px;color:var(--muted);white-space:nowrap
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      justify-content:flex-start;
     }
     .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
     .status.ready .dot{background:var(--ok)}
     .status.missing .dot{background:var(--bad)}
 
-    .two{display:grid;grid-template-columns: 430px 1fr;gap:14px}
+    .two{display:grid;grid-template-columns: 440px 1fr;gap:14px;align-items:start}
     @media (max-width: 980px){.two{grid-template-columns:1fr}}
+
     .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
-    .center{min-height:100vh;display:grid;place-items:center}
+    .center{min-height:100vh;display:grid;place-items:center;padding:18px}
     .hidden{display:none !important}
 
-    .kvRow{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin:12px 0 6px}
+    .kvRow{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-end;
+      margin:10px 0 6px
+    }
     .kvBlock{min-width:0}
     .kvLabel{color:var(--muted);font-size:12px}
-    .kvValue{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .kvValue.right{text-align:right}
+    .kvValue{
+      font-size:16px;
+      font-weight:650;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis
+    }
 
     /* login UX */
     .loginCard{max-width:520px;width:100%;padding:18px}
@@ -60,23 +146,79 @@
     .loginActions{justify-content:center}
     .loginMsg{text-align:center;min-height:18px}
 
-    /* small lines under customer in table */
-    .smallLine{margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* table customer lines */
+    .smallLine{
+      margin-top:3px;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
 
-    /* mail icon text helpers */
-    .icon{display:inline-flex;align-items:center;gap:8px}
-    .appleBadge{font-size:14px;line-height:1;opacity:.9;margin-right:2px}
+    /* make customer single line in table */
+    .customerOneLine{
+      font-weight:650;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:520px;
+    }
 
-    /* right column layout */
-    .rightHeaderRow{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px
+    /* right column actions */
+    .actionsCell{
+      white-space:nowrap;
+      display:flex;
+      gap:8px;
+      justify-content:flex-start;
+      align-items:center;
+      flex-wrap:nowrap;
+    }
+
+    /* status column centered + one line, right-aligned inside pill if needed */
+    .statusCell{ text-align:center; }
+    .statusRightWrap{
+      width:100%;
+      display:flex;
+      justify-content:center;
+    }
+
+    /* left card header row */
+    .leftTopRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px
     }
     .sectionTitle{font-size:12px;color:var(--muted);letter-spacing:.2px}
-    .divider{height:1px;background:rgba(34,49,88,.7);margin:10px 0}
 
-    /* completed block */
-    .searchRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-    .searchInput{max-width:360px}
+    .divider{height:1px;background:var(--border);margin:12px 0}
+
+    /* collapsible new order */
+    .toggleRow{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:10px 12px;
+      border:1px dashed var(--border);
+      background:var(--soft);
+      border-radius:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .plus{font-weight:800;font-size:18px;line-height:1;color:var(--muted)}
+    .newOrderBody{margin-top:10px}
+
+    /* mail variants */
+    .flagBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .flag{font-size:14px;line-height:1}
+    .appleBadge{font-size:14px;line-height:1;opacity:.9}
+
+    /* completed search label less prominent */
+    .searchHint{color:#94a3b8;font-size:12px;margin-top:4px}
   </style>
 </head>
 <body>
@@ -85,11 +227,12 @@
   <div class="card loginCard">
     <div class="loginHeader">
       <h1>Delivery Overview 📦</h1>
+      <div class="sub" style="margin-top:6px">Login with your Supplier Key or Master Key.</div>
     </div>
 
     <div class="loginForm">
-      <label for="keyInput">Password</label>
-      <input id="keyInput" type="password" autocomplete="current-password" placeholder="Enter password…" />
+      <label for="keyInput">Key</label>
+      <input id="keyInput" type="password" autocomplete="current-password" placeholder="Enter key…" />
 
       <div class="row loginActions" style="margin-top:12px">
         <button id="loginBtn" class="btn primary" type="button">Login</button>
@@ -115,12 +258,41 @@
     </header>
 
     <div class="two">
-      <!-- LEFT: order details -->
+      <!-- LEFT -->
       <section class="card">
-        <div class="rightHeaderRow">
-          <div class="sectionTitle">Order details</div>
-          <!-- status should be here (not above the order) -->
+        <div class="leftTopRow">
+          <div class="sectionTitle" id="whoAmI">—</div>
           <span id="statusBadge" class="status missing"><span class="dot"></span><span id="statusText">No selection</span></span>
+        </div>
+
+        <!-- NEW ORDER (master only) -->
+        <div id="newOrderWrap" class="hidden">
+          <div class="toggleRow" id="newOrderToggle">
+            <div class="sectionTitle">New order</div>
+            <div class="plus" id="newOrderPlus">+</div>
+          </div>
+
+          <div id="newOrderBody" class="newOrderBody hidden">
+            <label>Customer</label>
+            <input id="newCustomer" />
+
+            <label>Mail Customer</label>
+            <input id="newMailCustomer" type="email" />
+
+            <label>Supplier</label>
+            <select id="newSupplier"></select>
+
+            <label>Order ID</label>
+            <input id="newOrderId" />
+
+            <div class="row" style="margin-top:12px">
+              <button id="createBtn" class="btn primary" type="button">Add order</button>
+            </div>
+
+            <div class="hint" id="createMsg"></div>
+          </div>
+
+          <div class="divider"></div>
         </div>
 
         <div id="noSelection" class="hint">Open an order from the table.</div>
@@ -130,10 +302,8 @@
             <div class="kvBlock" style="flex:1">
               <div class="kvLabel">Customer</div>
               <div id="customerLabel" class="kvValue">—</div>
-            </div>
-            <div class="kvBlock" style="flex:0 0 auto">
-              <div class="kvLabel" style="text-align:right">Order ID</div>
-              <div id="orderIdLabel" class="kvValue right">—</div>
+              <div id="supplierLine" class="smallLine hidden"></div>
+              <div id="orderLine" class="smallLine hidden"></div>
             </div>
           </div>
 
@@ -148,26 +318,31 @@
 
           <div class="row" style="margin-top:12px">
             <button id="saveBtn" class="btn primary" type="button">Save</button>
+          </div>
 
-            <!-- ✅ Gmail/default button: NO logo -->
-            <button id="mailCustomerBtn" class="btn hidden" type="button">Mail customer</button>
-
-            <!-- ✅ Apple button: keep Apple logo -->
-            <button id="appleMailBtn" class="btn hidden" type="button">
-              <span class="icon"><span class="appleBadge"></span><span>Mail customer</span></span>
-            </button>
+          <!-- Mail customer (master only) -->
+          <div id="mailCustomerWrap" class="hidden" style="margin-top:12px">
+            <div class="sectionTitle" style="margin-bottom:8px">Mail customer</div>
+            <div class="row">
+              <button class="btn" id="mc_en">Gmail / Mail</button>
+              <button class="btn" id="mc_nl"><span class="flag">🇳🇱</span> NL</button>
+              <button class="btn" id="mc_de"><span class="flag">🇩🇪</span> DE</button>
+              <button class="btn" id="mc_fr"><span class="flag">🇫🇷</span> FR</button>
+              <button class="btn" id="mc_apple"><span class="appleBadge"></span> Apple Mail</button>
+            </div>
+            <div class="hint" style="margin-top:8px" id="mailMsg"></div>
           </div>
 
           <div class="hint" id="msg"></div>
         </div>
       </section>
 
-      <!-- RIGHT: orders -->
+      <!-- RIGHT -->
       <section class="card">
-        <table class="table" id="ordersTable">
+        <table class="table">
           <thead>
             <tr>
-              <th>Customer</th>
+              <th style="width:60%">Customer</th>
               <th style="width:170px;text-align:center">Status</th>
               <th style="width:260px">Action</th>
             </tr>
@@ -177,19 +352,24 @@
           </tbody>
         </table>
 
-        <!-- ✅ Completed section (master only) -->
+        <!-- COMPLETED (master only) -->
         <div id="completedWrap" class="hidden">
           <div class="divider"></div>
 
-          <div class="searchRow">
-            <div class="sectionTitle">Completed orders (mail customer clicked)</div>
-            <input id="completedSearch" class="searchInput" placeholder="Search by customer or order id…" />
+          <div class="row" style="justify-content:space-between;align-items:flex-end">
+            <div>
+              <div class="sectionTitle">Completed orders</div>
+              <div class="searchHint">Search by customer or order id…</div>
+            </div>
+            <input id="completedSearch" placeholder="Search…" style="max-width:340px" />
           </div>
+
+          <div style="height:10px"></div>
 
           <table class="table">
             <thead>
               <tr>
-                <th>Customer</th>
+                <th style="width:60%">Customer</th>
                 <th style="width:170px;text-align:center">Status</th>
                 <th style="width:260px">Action</th>
               </tr>
@@ -205,49 +385,71 @@
 </section>
 
 <script>
-/* ✅ Update this to your newest Apps Script URL */
-const API_BASE = "https://script.google.com/macros/s/AKfycbx9wOUq4UznRjRjB1RQu3-P2fMXFS6oFzuvY_gQnHTXelfduP4Ly1dhUqdhK89XnD_KgA/exec";
+/* ✅ Your current Apps Script */
+const API_BASE = "https://script.google.com/macros/s/AKfycbz1gFMihzIhsuapAKy1hMVmKlj6sLpcln4xaGYB4eWG-eGebJlsXFJ9aV0nJ5jWEiHCzw/exec";
 const MASTER_SUPPLIER_NAME = "ALL";
 
+/* --- DOM --- */
 const $ = (id) => document.getElementById(id);
 
 const loginView = $("loginView");
 const portalView = $("portalView");
-
 const keyInput = $("keyInput");
 const loginBtn = $("loginBtn");
 const clearBtn = $("clearBtn");
 const loginMsg = $("loginMsg");
-
 const reloadBtn = $("reloadBtn");
 const logoutBtn = $("logoutBtn");
 
+const whoAmI = $("whoAmI");
 const tbody = $("tbody");
-const tbodyCompleted = $("tbodyCompleted");
-const completedWrap = $("completedWrap");
-const completedSearch = $("completedSearch");
-
 const statusBadge = $("statusBadge");
 const statusText = $("statusText");
 const noSelection = $("noSelection");
 const form = $("form");
 
 const customerLabel = $("customerLabel");
-const orderIdLabel = $("orderIdLabel");
+const supplierLine = $("supplierLine");
+const orderLine = $("orderLine");
 const carrier = $("carrier");
 const trackingNumber = $("trackingNumber");
 const trackingLink = $("trackingLink");
-
 const saveBtn = $("saveBtn");
-const mailCustomerBtn = $("mailCustomerBtn");
-const appleMailBtn = $("appleMailBtn");
 const msg = $("msg");
 
+const mailCustomerWrap = $("mailCustomerWrap");
+const mailMsg = $("mailMsg");
+const mc_en = $("mc_en");
+const mc_nl = $("mc_nl");
+const mc_de = $("mc_de");
+const mc_fr = $("mc_fr");
+const mc_apple = $("mc_apple");
+
+const completedWrap = $("completedWrap");
+const completedSearch = $("completedSearch");
+const tbodyCompleted = $("tbodyCompleted");
+
+/* new order */
+const newOrderWrap = $("newOrderWrap");
+const newOrderToggle = $("newOrderToggle");
+const newOrderPlus = $("newOrderPlus");
+const newOrderBody = $("newOrderBody");
+const newCustomer = $("newCustomer");
+const newMailCustomer = $("newMailCustomer");
+const newSupplier = $("newSupplier");
+const newOrderId = $("newOrderId");
+const createBtn = $("createBtn");
+const createMsg = $("createMsg");
+
+/* --- State --- */
 let supplier = "";
 let supplierKey = "";
 let orders = [];
 let selected = null;
+let suppliersList = [];
+let supplierMailMap = {};
 
+/* --- Utils --- */
 function escapeHTML(s){
   return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
 }
@@ -270,8 +472,8 @@ function getAny(obj, wantedKeys){
   }
   return "";
 }
-function isCompleteTracking(o){
-  return !!(getAny(o, ["Carrier"]) && getAny(o, ["Trackingnumber","Tracking Number"]) && getAny(o, ["Trackinglink","Tracking Link"]));
+function trackingComplete(o){
+  return !!(getAny(o,["Carrier"]) && getAny(o,["Trackingnumber","Tracking Number"]) && getAny(o,["Trackinglink","Tracking Link"]));
 }
 function setStatus(text, ok){
   statusBadge.classList.remove("ready","missing");
@@ -311,6 +513,7 @@ function jsonp(url){
   });
 }
 
+/* Gmail -> fallback mailto */
 function openGmailOrMailto(to, subject, body){
   const gmailUrl =
     "https://mail.google.com/mail/?view=cm&fs=1" +
@@ -328,10 +531,33 @@ function openGmailOrMailto(to, subject, body){
   }
 }
 
-async function doLogin(){
-  const key = keyInput.value.trim();
+/* For customer: open a "choice" like supplier (gmail or apple). */
+function openMailChoice(to, subject, body){
+  // Try Gmail in new tab; if blocked, fallback to mailto (Apple Mail / default)
+  openGmailOrMailto(to, subject, body);
+}
+
+/* --- Persist Completed TRUE/FALSE --- */
+async function setCompleted(rowId, val){
+  if(!isMasterLogin()) return false;
+  try{
+    const url =
+      `${API_BASE}?action=complete` +
+      `&supplierKey=${encodeURIComponent(supplierKey)}` +
+      `&rowId=${encodeURIComponent(rowId)}` +
+      `&Completed=${encodeURIComponent(val ? "TRUE" : "FALSE")}`;
+    const data = await jsonp(url);
+    return !!(data && data.ok);
+  }catch(_){
+    return false;
+  }
+}
+
+/* --- Auth --- */
+async function doLogin(withKey){
+  const key = (withKey ?? keyInput.value).trim();
   if(!key){
-    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter password.</span>";
+    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter key.</span>";
     return;
   }
 
@@ -341,7 +567,7 @@ async function doLogin(){
   try{
     const data = await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`);
     if(!data || !data.ok || !data.supplier){
-      loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid password.</span>";
+      loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid key.</span>";
       return;
     }
 
@@ -352,7 +578,7 @@ async function doLogin(){
     sessionStorage.setItem("supplier_name", supplier);
 
     showPortal();
-    await loadOrders();
+    await bootstrapAfterLogin_();
   }catch(e){
     loginMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
   }finally{
@@ -360,14 +586,43 @@ async function doLogin(){
   }
 }
 
+/* --- Suppliers list for dropdown + mail map --- */
+async function loadSuppliers_(){
+  try{
+    const data = await jsonp(`${API_BASE}?action=suppliers`);
+    if(data && data.ok){
+      suppliersList = data.suppliers || [];
+      supplierMailMap = data.mailMap || {};
+    } else {
+      suppliersList = [];
+      supplierMailMap = {};
+    }
+  }catch(_){
+    suppliersList = [];
+    supplierMailMap = {};
+  }
+
+  // Fill dropdown (master only)
+  newSupplier.innerHTML = "";
+  for(const s of suppliersList){
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    newSupplier.appendChild(opt);
+  }
+}
+
+/* --- Orders --- */
 async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
   noSelection.classList.remove("hidden");
   customerLabel.textContent = "—";
-  orderIdLabel.textContent = "—";
+  supplierLine.classList.add("hidden");
+  orderLine.classList.add("hidden");
   setStatus("No selection", false);
   msg.textContent = "";
+  mailMsg.textContent = "";
 
   tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
   tbodyCompleted.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
@@ -377,6 +632,7 @@ async function loadOrders(){
     : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
 
   const data = await jsonp(url);
+
   if(!data || !data.ok){
     tbody.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
     tbodyCompleted.innerHTML = `<tr><td colspan="3" class="muted">${escapeHTML((data && data.error) || "Error")}</td></tr>`;
@@ -385,110 +641,105 @@ async function loadOrders(){
 
   orders = (data.orders || []).slice();
 
-  // ✅ newest first (rowId desc)
+  // newest first: rowId desc
   orders.sort((a,b)=> Number(b.rowId||0) - Number(a.rowId||0));
 
   renderOrders();
 }
 
 function renderOrders(){
-  if(!orders.length){
-    tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
-    tbodyCompleted.innerHTML = `<tr><td colspan="3" class="muted">No completed orders.</td></tr>`;
-    completedWrap.classList.toggle("hidden", !isMasterLogin());
-    return;
-  }
-
   const master = isMasterLogin();
   completedWrap.classList.toggle("hidden", !master);
 
   const q = (completedSearch.value || "").trim().toLowerCase();
-  const matchSearch = (o) => {
+  const searchMatch = (o) => {
     if(!q) return true;
-    const c = (getAny(o, ["Customer"]) || "").toLowerCase();
-    const id = (getAny(o, ["Order ID","OrderID"]) || "").toLowerCase();
+    const c = (getAny(o,["Customer"]) || "").toLowerCase();
+    const id = (getAny(o,["Order ID","OrderID"]) || "").toLowerCase();
     return c.includes(q) || id.includes(q);
   };
 
-  const active = master ? orders.filter(o => !Boolean(o.Completed)) : orders;
-  const completed = master ? orders.filter(o => Boolean(o.Completed)).filter(matchSearch) : [];
+  const openList = master ? orders.filter(o => !Boolean(o.Completed)) : orders.slice();
+  const doneList = master ? orders.filter(o => Boolean(o.Completed)).filter(searchMatch) : [];
 
-  // ---- Active ----
+  // OPEN table
   tbody.innerHTML = "";
-  if(!active.length){
-    tbody.innerHTML = `<tr><td colspan="3" class="muted">No open orders.</td></tr>`;
+  if(!openList.length){
+    tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
   } else {
-    for(const o of active){
-      const okTracking = isCompleteTracking(o);
-      const supplierName = getAny(o, ["Supplier"]);
-      const orderId = getAny(o, ["Order ID","OrderID"]);
+    for(const o of openList){
+      const ok = trackingComplete(o);
+      const sup = getAny(o,["Supplier"]);
+      const oid = getAny(o,["Order ID","OrderID"]);
 
-      const supplierLine = master && supplierName
-        ? `<div class="smallLine">${escapeHTML(supplierName)}</div>`
-        : "";
+      // show supplier small under customer (master only); no separate column
+      const supplierLineHtml = (master && sup) ? `<div class="smallLine">${escapeHTML(sup)}</div>` : "";
+      const orderLineHtml = (oid) ? `<div class="smallLine">Order ID: ${escapeHTML(oid)}</div>` : "";
 
-      const orderLine = orderId
-        ? `<div class="smallLine">Order ID: ${escapeHTML(orderId)}</div>`
-        : "";
-
-      const mailSupplierBtnHtml = master
+      const mailSupplierBtn = master
         ? `<button class="btn" data-mailsupplier="${escapeHTML(o.rowId)}">Mail supplier</button>`
         : "";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>
-          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(getAny(o, ["Customer"]))}</div>
-          ${supplierLine}
-          ${orderLine}
+          <div class="customerOneLine" title="${escapeHTML(getAny(o,["Customer"]))}">
+            ${escapeHTML(getAny(o,["Customer"]))}
+          </div>
+          ${supplierLineHtml}
+          ${orderLineHtml}
         </td>
-        <td style="text-align:center">
-          <span class="status ${okTracking ? "ready":"missing"}" style="margin-left:auto;margin-right:auto">
-            <span class="dot"></span>${okTracking ? "Complete" : "Missing tracking"}
-          </span>
+        <td class="statusCell">
+          <div class="statusRightWrap">
+            <span class="status ${ok ? "ready":"missing"}">
+              <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
+            </span>
+          </div>
         </td>
-        <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start">
-          <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-          ${mailSupplierBtnHtml}
+        <td>
+          <div class="actionsCell">
+            <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+            ${mailSupplierBtn}
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
     }
   }
 
-  // ---- Completed (master) ----
+  // COMPLETED table (master only) - open only
   if(master){
     tbodyCompleted.innerHTML = "";
-    if(!completed.length){
+    if(!doneList.length){
       tbodyCompleted.innerHTML = `<tr><td colspan="3" class="muted">No completed orders.</td></tr>`;
     } else {
-      for(const o of completed){
-        const okTracking = isCompleteTracking(o);
-        const supplierName = getAny(o, ["Supplier"]);
-        const orderId = getAny(o, ["Order ID","OrderID"]);
-
-        const supplierLine = supplierName
-          ? `<div class="smallLine">${escapeHTML(supplierName)}</div>`
-          : "";
-
-        const orderLine = orderId
-          ? `<div class="smallLine">Order ID: ${escapeHTML(orderId)}</div>`
-          : "";
+      for(const o of doneList){
+        const ok = trackingComplete(o);
+        const sup = getAny(o,["Supplier"]);
+        const oid = getAny(o,["Order ID","OrderID"]);
+        const supplierLineHtml = (sup) ? `<div class="smallLine">${escapeHTML(sup)}</div>` : "";
+        const orderLineHtml = (oid) ? `<div class="smallLine">Order ID: ${escapeHTML(oid)}</div>` : "";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>
-            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(getAny(o, ["Customer"]))}</div>
-            ${supplierLine}
-            ${orderLine}
+            <div class="customerOneLine" title="${escapeHTML(getAny(o,["Customer"]))}">
+              ${escapeHTML(getAny(o,["Customer"]))}
+            </div>
+            ${supplierLineHtml}
+            ${orderLineHtml}
           </td>
-          <td style="text-align:center">
-            <span class="status ${okTracking ? "ready":"missing"}">
-              <span class="dot"></span>${okTracking ? "Complete" : "Missing tracking"}
-            </span>
+          <td class="statusCell">
+            <div class="statusRightWrap">
+              <span class="status ${ok ? "ready":"missing"}">
+                <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
+              </span>
+            </div>
           </td>
-          <td style="white-space:nowrap;display:flex;gap:8px;justify-content:flex-start">
-            <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+          <td>
+            <div class="actionsCell">
+              <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+            </div>
           </td>
         `;
         tbodyCompleted.appendChild(tr);
@@ -496,7 +747,7 @@ function renderOrders(){
     }
   }
 
-  // events
+  // bind events
   tbody.querySelectorAll("button[data-open]").forEach(btn=>{
     btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
   });
@@ -514,26 +765,44 @@ function openRow(rowId){
   selected = orders.find(x => Number(x.rowId) === rowId);
   if(!selected) return;
 
-  customerLabel.textContent = getAny(selected, ["Customer"]) || "—";
-  orderIdLabel.textContent = getAny(selected, ["Order ID","OrderID"]) || "—";
+  const c = getAny(selected,["Customer"]) || "—";
+  const sup = getAny(selected,["Supplier"]);
+  const oid = getAny(selected,["Order ID","OrderID"]);
 
-  carrier.value = getAny(selected, ["Carrier"]) || "";
-  trackingNumber.value = getAny(selected, ["Trackingnumber","Tracking Number"]) || "";
-  trackingLink.value = getAny(selected, ["Trackinglink","Tracking Link"]) || "";
+  customerLabel.textContent = c;
+
+  // show supplier + order id under customer in left panel
+  if(isMasterLogin() && sup){
+    supplierLine.textContent = sup;
+    supplierLine.classList.remove("hidden");
+  } else {
+    supplierLine.classList.add("hidden");
+  }
+
+  if(oid){
+    orderLine.textContent = "Order ID: " + oid;
+    orderLine.classList.remove("hidden");
+  } else {
+    orderLine.classList.add("hidden");
+  }
+
+  carrier.value = getAny(selected,["Carrier"]) || "";
+  trackingNumber.value = getAny(selected,["Trackingnumber","Tracking Number"]) || "";
+  trackingLink.value = getAny(selected,["Trackinglink","Tracking Link"]) || "";
 
   noSelection.classList.add("hidden");
   form.classList.remove("hidden");
+
+  const ok = trackingComplete(selected);
+  setStatus(ok ? "Complete" : "Missing tracking", ok);
+
+  // master only: show mail customer variants
+  mailCustomerWrap.classList.toggle("hidden", !isMasterLogin());
+  mailMsg.textContent = "";
   msg.textContent = "";
-
-  const okTracking = isCompleteTracking(selected);
-  setStatus(okTracking ? "Complete" : "Missing tracking", okTracking);
-
-  const master = isMasterLogin();
-  mailCustomerBtn.classList.toggle("hidden", !master);
-  appleMailBtn.classList.toggle("hidden", !master);
 }
 
-/* ---- Save ---- */
+/* --- Update tracking --- */
 async function save(){
   if(!selected) return;
 
@@ -565,7 +834,6 @@ async function save(){
       selected.Carrier = Carrier;
       selected.Trackingnumber = Trackingnumber;
       selected.Trackinglink = Trackinglink;
-
       renderOrders();
       setStatus("Complete", true);
       msg.innerHTML = "<span style='color:var(--ok)'>Saved ✓</span>";
@@ -579,76 +847,7 @@ async function save(){
   }
 }
 
-/* ✅ Persist completed in sheet (master only) */
-async function setCompleted(rowId, val){
-  if(!isMasterLogin()) return false;
-  try{
-    const url =
-      `${API_BASE}?action=complete` +
-      `&supplierKey=${encodeURIComponent(supplierKey)}` +
-      `&rowId=${encodeURIComponent(rowId)}` +
-      `&Completed=${encodeURIComponent(val ? "TRUE" : "FALSE")}`;
-    const data = await jsonp(url);
-    return !!(data && data.ok);
-  }catch(_){
-    return false;
-  }
-}
-
-/* ---- Mail customer ---- */
-async function mailCustomer(useApple){
-  if(!isMasterLogin() || !selected) return;
-
-  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
-  const customerName = getAny(selected, ["Customer"]);
-  const orderId = getAny(selected, ["Order ID","OrderID"]);
-
-  if(!to){
-    msg.innerHTML = "<span style='color:var(--warn)'>No customer email found for this row (Mail Customer).</span>";
-    return;
-  }
-
-  const Carrier = carrier.value.trim() || getAny(selected, ["Carrier"]);
-  const Trackingnumber = trackingNumber.value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]);
-  const Trackinglink = trackingLink.value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]);
-
-  const subject = `Tracking details – Order ${orderId || ""}`.trim();
-  const body =
-`Hi ${customerName || "there"},
-
-Here are your shipment details:
-
-Order ID: ${orderId || "-"}
-Carrier: ${Carrier || "-"}
-Tracking number: ${Trackingnumber || "-"}
-Tracking link: ${Trackinglink || "-"}
-
-Kind regards`;
-
-  // open mail first
-  if(useApple){
-    const mailtoUrl =
-      "mailto:" + encodeURIComponent(to) +
-      `?subject=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
-  } else {
-    openGmailOrMailto(to, subject, body);
-  }
-
-  // ✅ then persist completed + move to completed list
-  msg.innerHTML = "<span class='muted'>Marking as completed…</span>";
-  const ok = await setCompleted(selected.rowId, true);
-  if(ok){
-    selected.Completed = true;
-    msg.innerHTML = "<span style='color:var(--ok)'>Completed ✓</span>";
-    renderOrders();
-  } else {
-    msg.innerHTML = "<span style='color:var(--warn)'>Mail opened, but could not save Completed status.</span>";
-  }
-}
-
-/* ---- Mail supplier per row (master only) ---- */
+/* --- Mail supplier per row (master) --- */
 function mailSupplierRow(rowId){
   if(!isMasterLogin()) return;
 
@@ -664,10 +863,11 @@ function mailSupplierRow(rowId){
   const orderId = getAny(row, ["Order ID","OrderID"]);
 
   if(!to){
-    msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found for this row (Mail Supplier).</span>";
+    msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>";
     return;
   }
 
+  // Supplier email: NL + EN (keep it simple: EN default in subject/body)
   const subject = `Tracking needed – Order ${orderId || ""}`.trim();
   const body =
 `Hi ${supplierName || "there"},
@@ -684,10 +884,187 @@ Please reply with:
 
 Thank you!`;
 
-  openGmailOrMailto(to, subject, body);
+  openMailChoice(to, subject, body);
 }
 
-/* ---- Logout ---- */
+/* --- Mail customer variants (master) --- */
+function customerMailTemplate(lang){
+  const c = getAny(selected,["Customer"]) || "there";
+  const oid = getAny(selected,["Order ID","OrderID"]) || "-";
+  const Carrier = carrier.value.trim() || getAny(selected,["Carrier"]) || "-";
+  const TN = trackingNumber.value.trim() || getAny(selected,["Trackingnumber","Tracking Number"]) || "-";
+  const TL = trackingLink.value.trim() || getAny(selected,["Trackinglink","Tracking Link"]) || "-";
+
+  if(lang === "nl"){
+    return {
+      subject: `Tracking informatie – Order ${oid}`,
+      body:
+`Hi ${c},
+
+Hierbij je verzendgegevens:
+
+Order ID: ${oid}
+Carrier: ${Carrier}
+Tracking number: ${TN}
+Tracking link: ${TL}
+
+Groet`
+    };
+  }
+  if(lang === "de"){
+    return {
+      subject: `Sendungsverfolgung – Bestellung ${oid}`,
+      body:
+`Hallo ${c},
+
+Hier sind deine Versanddaten:
+
+Order ID: ${oid}
+Carrier: ${Carrier}
+Tracking number: ${TN}
+Tracking link: ${TL}
+
+Viele Grüße`
+    };
+  }
+  if(lang === "fr"){
+    return {
+      subject: `Suivi d’expédition – Commande ${oid}`,
+      body:
+`Bonjour ${c},
+
+Voici les informations d’expédition :
+
+Order ID: ${oid}
+Carrier: ${Carrier}
+Tracking number: ${TN}
+Tracking link: ${TL}
+
+Cordialement`
+    };
+  }
+  // default EN
+  return {
+    subject: `Tracking details – Order ${oid}`,
+    body:
+`Hi ${c},
+
+Here are your shipment details:
+
+Order ID: ${oid}
+Carrier: ${Carrier}
+Tracking number: ${TN}
+Tracking link: ${TL}
+
+Kind regards`
+  };
+}
+
+async function afterMailCustomer_(){
+  if(!isMasterLogin() || !selected) return;
+
+  // optimistic UI
+  selected.Completed = true;
+  renderOrders();
+
+  const ok = await setCompleted(selected.rowId, true);
+  if(ok){
+    mailMsg.innerHTML = "<span style='color:var(--ok)'>Completed ✓</span>";
+  } else {
+    // revert if failed
+    selected.Completed = false;
+    renderOrders();
+    mailMsg.innerHTML = "<span style='color:var(--warn)'>Mail opened, but could not save Completed.</span>";
+  }
+}
+
+async function mailCustomer(lang, forceApple){
+  if(!isMasterLogin() || !selected) return;
+
+  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
+  if(!to){
+    mailMsg.innerHTML = "<span style='color:var(--warn)'>No customer email found.</span>";
+    return;
+  }
+
+  const tpl = customerMailTemplate(lang);
+
+  if(forceApple){
+    const mailtoUrl =
+      "mailto:" + encodeURIComponent(to) +
+      `?subject=${encodeURIComponent(tpl.subject)}` +
+      `&body=${encodeURIComponent(tpl.body)}`;
+    window.location.href = mailtoUrl;
+  } else {
+    openMailChoice(to, tpl.subject, tpl.body);
+  }
+
+  // mark completed
+  mailMsg.textContent = "Marking completed…";
+  await afterMailCustomer_();
+}
+
+/* --- Create order (master) --- */
+async function createOrder(){
+  if(!isMasterLogin()) return;
+
+  const Customer = newCustomer.value.trim();
+  const MailCustomer = newMailCustomer.value.trim();
+  const Supplier = newSupplier.value;
+  const OrderID = newOrderId.value.trim();
+
+  if(!Customer || !MailCustomer || !Supplier || !OrderID){
+    createMsg.innerHTML = "<span style='color:var(--warn)'>Please fill all fields.</span>";
+    return;
+  }
+
+  createBtn.disabled = true;
+  createMsg.textContent = "Adding…";
+
+  try{
+    const url =
+      `${API_BASE}?action=create` +
+      `&supplierKey=${encodeURIComponent(supplierKey)}` +
+      `&Customer=${encodeURIComponent(Customer)}` +
+      `&MailCustomer=${encodeURIComponent(MailCustomer)}` +
+      `&Supplier=${encodeURIComponent(Supplier)}` +
+      `&OrderID=${encodeURIComponent(OrderID)}`;
+
+    const data = await jsonp(url);
+
+    if(data && data.ok){
+      createMsg.innerHTML = "<span style='color:var(--ok)'>Added ✓</span>";
+      newCustomer.value = "";
+      newMailCustomer.value = "";
+      newOrderId.value = "";
+      await loadOrders();
+    } else {
+      createMsg.innerHTML = "<span style='color:var(--bad)'>Failed: " + escapeHTML((data && data.error) || "Unknown") + "</span>";
+    }
+  }catch(e){
+    createMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
+  }finally{
+    createBtn.disabled = false;
+  }
+}
+
+/* --- Bootstrap after login --- */
+async function bootstrapAfterLogin_(){
+  whoAmI.textContent = isMasterLogin() ? "Master view" : `Supplier: ${supplier}`;
+
+  // master-only sections
+  newOrderWrap.classList.toggle("hidden", !isMasterLogin());
+  mailCustomerWrap.classList.toggle("hidden", !isMasterLogin());
+  completedWrap.classList.toggle("hidden", !isMasterLogin());
+
+  if(isMasterLogin()){
+    await loadSuppliers_();
+  }
+
+  await loadOrders();
+}
+
+/* --- Logout --- */
 function logout(){
   supplier = "";
   supplierKey = "";
@@ -698,8 +1075,29 @@ function logout(){
   showLogin();
 }
 
-/* ---- Events ---- */
-loginBtn.addEventListener("click", doLogin);
+/* --- Optional: auto-login from URL like /KB26 or ?key=KB26 --- */
+function tryAutoKeyFromUrl_(){
+  // /tracking/KB26 -> last path segment
+  const pathSeg = (location.pathname || "").split("/").filter(Boolean);
+  const last = pathSeg[pathSeg.length - 1] || "";
+  // allow query key
+  const qs = new URLSearchParams(location.search);
+  const qk = qs.get("key") || qs.get("k") || "";
+
+  // If last looks like a key (short-ish, alnum), prefer it
+  const candidate = (qk || last || "").trim();
+  if(!candidate) return "";
+
+  // ignore common filenames
+  if(candidate.toLowerCase().includes(".html")) return "";
+
+  // simple heuristic
+  if(/^[A-Za-z0-9_-]{3,}$/.test(candidate)) return candidate;
+  return "";
+}
+
+/* --- Events --- */
+loginBtn.addEventListener("click", ()=> doLogin());
 clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
 keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
 
@@ -707,22 +1105,44 @@ reloadBtn.addEventListener("click", loadOrders);
 logoutBtn.addEventListener("click", logout);
 saveBtn.addEventListener("click", save);
 
-mailCustomerBtn.addEventListener("click", ()=> mailCustomer(false));
-appleMailBtn.addEventListener("click", ()=> mailCustomer(true));
+completedSearch.addEventListener("input", renderOrders);
 
-completedSearch.addEventListener("input", ()=> renderOrders());
+mc_en.addEventListener("click", ()=> mailCustomer("en", false));
+mc_nl.addEventListener("click", ()=> mailCustomer("nl", false));
+mc_de.addEventListener("click", ()=> mailCustomer("de", false));
+mc_fr.addEventListener("click", ()=> mailCustomer("fr", false));
+mc_apple.addEventListener("click", ()=> mailCustomer("en", true));
 
-(function init(){
-  const k = sessionStorage.getItem("supplier_key") || "";
+newOrderToggle.addEventListener("click", ()=>{
+  const isHidden = newOrderBody.classList.toggle("hidden");
+  newOrderPlus.textContent = isHidden ? "+" : "–";
+});
+createBtn.addEventListener("click", createOrder);
+
+/* --- Init --- */
+(async function init(){
+  const autoKey = tryAutoKeyFromUrl_();
+
+  const k = autoKey || sessionStorage.getItem("supplier_key") || "";
   const s = sessionStorage.getItem("supplier_name") || "";
-  if(k && s){
+
+  if(k && !autoKey && s){
+    // session login
     supplierKey = k;
     supplier = s;
     showPortal();
-    loadOrders();
-  } else {
-    showLogin();
+    await bootstrapAfterLogin_();
+    return;
   }
+
+  if(autoKey){
+    // auto-login through URL key
+    keyInput.value = autoKey;
+    await doLogin(autoKey);
+    return;
+  }
+
+  showLogin();
 })();
 </script>
 </body>
