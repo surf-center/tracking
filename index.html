@@ -201,9 +201,7 @@
     .grid3{
       display:grid; grid-template-columns:160px 1fr auto; gap:10px; align-items:end;
     }
-    @media (max-width: 520px){
-      .grid3{grid-template-columns:1fr}
-    }
+    @media (max-width: 520px){ .grid3{grid-template-columns:1fr} }
 
     .tmplRow{
       display:flex; gap:10px; align-items:center; justify-content:space-between;
@@ -214,8 +212,33 @@
       margin-top:10px;
     }
     .tmplRowLeft{min-width:0}
-    .tmplLabel{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tmplLabel{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .tmplMeta{font-size:12px;color:var(--muted);margin-top:2px}
+
+    .pillNum{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:30px; height:30px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--soft);
+      font-weight:800;
+    }
+    .addRow{
+      display:grid;
+      grid-template-columns: 34px 110px 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      margin-top:10px;
+    }
+    @media (max-width:520px){
+      .addRow{grid-template-columns:34px 1fr; grid-auto-rows:auto}
+      .addRow .rightActions{grid-column:1 / -1; justify-content:flex-end}
+    }
+    .rightActions{display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:nowrap}
   </style>
 </head>
 <body>
@@ -330,7 +353,7 @@
 
             <div class="divider"></div>
 
-            <!-- ✅ Edit templates (collapsed) -->
+            <!-- ✅ EDIT TEMPLATES (collapsed) -->
             <div class="toggleRow" id="templatesToggle">
               <div class="sectionTitle">Edit templates</div>
               <div class="plus" id="templatesPlus">+</div>
@@ -416,10 +439,83 @@
               </div>
 
               <div class="hint" id="supMsg" style="margin-top:8px"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- ✅ ADD TEMPLATES (collapsed) -->
+            <div class="toggleRow" id="addToggle">
+              <div class="sectionTitle">Add templates</div>
+              <div class="plus" id="addPlus">+</div>
+            </div>
+
+            <div id="addBody" class="newOrderBody hidden">
+              <div class="muted" style="font-size:12px;margin-bottom:6px">Add up to 5 templates. Each template is stored with label TEMPLATE_1 … TEMPLATE_5.</div>
+
+              <div class="addRow">
+                <div class="pillNum">1️⃣</div>
+                <select id="addLang1">
+                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
+                </select>
+                <input id="addLabel1" placeholder="Label (optional)" />
+                <div class="rightActions">
+                  <button class="btn primary" id="addEdit1" type="button">Edit</button>
+                  <button class="btn" id="addSend1" type="button">Send</button>
+                </div>
+              </div>
+
+              <div class="addRow">
+                <div class="pillNum">2️⃣</div>
+                <select id="addLang2">
+                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
+                </select>
+                <input id="addLabel2" placeholder="Label (optional)" />
+                <div class="rightActions">
+                  <button class="btn primary" id="addEdit2" type="button">Edit</button>
+                  <button class="btn" id="addSend2" type="button">Send</button>
+                </div>
+              </div>
+
+              <div class="addRow">
+                <div class="pillNum">3️⃣</div>
+                <select id="addLang3">
+                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
+                </select>
+                <input id="addLabel3" placeholder="Label (optional)" />
+                <div class="rightActions">
+                  <button class="btn primary" id="addEdit3" type="button">Edit</button>
+                  <button class="btn" id="addSend3" type="button">Send</button>
+                </div>
+              </div>
+
+              <div class="addRow">
+                <div class="pillNum">4️⃣</div>
+                <select id="addLang4">
+                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
+                </select>
+                <input id="addLabel4" placeholder="Label (optional)" />
+                <div class="rightActions">
+                  <button class="btn primary" id="addEdit4" type="button">Edit</button>
+                  <button class="btn" id="addSend4" type="button">Send</button>
+                </div>
+              </div>
+
+              <div class="addRow">
+                <div class="pillNum">5️⃣</div>
+                <select id="addLang5">
+                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
+                </select>
+                <input id="addLabel5" placeholder="Label (optional)" />
+                <div class="rightActions">
+                  <button class="btn primary" id="addEdit5" type="button">Edit</button>
+                  <button class="btn" id="addSend5" type="button">Send</button>
+                </div>
+              </div>
+
+              <div class="hint" id="addMsg" style="margin-top:8px"></div>
 
               <div class="divider"></div>
 
-              <!-- ✅ Saved templates list (label left, send right) -->
               <div style="font-weight:800;font-size:13px;margin-bottom:6px">Saved templates</div>
               <div id="savedTemplatesList" class="muted" style="font-size:13px">Loading…</div>
             </div>
@@ -496,7 +592,7 @@
 
 <script>
 /* CONFIG */
-const API_BASE = "https://script.google.com/macros/s/AKfycbzjSgAFFRafW4RCA5oVnzqYb2ErCdXBZgG5_qrFOEX8OTeYyO39FUxpXmZV-MKYQ4GBUw/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycby0rOiCDRAw6SGJ_V1l-l6k6ynX900jdReh6be7vaMS5GSGLU5cIQ5SVITkYkyT4nOAzg/exec";
 const MASTER_SUPPLIER_NAME = "ALL";
 const LABEL_CUSTOMER = "CUSTOMER";
 const LABEL_SUPPLIER = "SUPPLIER";
@@ -539,37 +635,32 @@ const mc_nl = $("mc_nl");
 const mc_de = $("mc_de");
 const mc_fr = $("mc_fr");
 
-/* templates UI */
+/* edit templates */
 const templatesToggle = $("templatesToggle");
 const templatesPlus = $("templatesPlus");
 const templatesBody = $("templatesBody");
-const savedTemplatesList = $("savedTemplatesList");
 
-/* customer editor */
 const custLang = $("custLang");
 const custLoad = $("custLoad");
 const custSave = $("custSave");
 const custSubject = $("custSubject");
 const custBody = $("custBody");
 const custMsg = $("custMsg");
-const custTokCustomer = $("custTokCustomer");
-const custTokOrderID = $("custTokOrderID");
-const custTokCarrier = $("custTokCarrier");
-const custTokTrackingnumber = $("custTokTrackingnumber");
-const custTokTrackinglink = $("custTokTrackinglink");
 
-/* supplier editor */
 const supLang = $("supLang");
 const supLoad = $("supLoad");
 const supSave = $("supSave");
 const supSubject = $("supSubject");
 const supBody = $("supBody");
 const supMsg = $("supMsg");
-const supTokCustomer = $("supTokCustomer");
-const supTokOrderID = $("supTokOrderID");
-const supTokCarrier = $("supTokCarrier");
-const supTokTrackingnumber = $("supTokTrackingnumber");
-const supTokTrackinglink = $("supTokTrackinglink");
+
+/* add templates */
+const addToggle = $("addToggle");
+const addPlus = $("addPlus");
+const addBody = $("addBody");
+const addMsg = $("addMsg");
+
+const savedTemplatesList = $("savedTemplatesList");
 
 /* completed */
 const completedWrap = $("completedWrap");
@@ -593,6 +684,7 @@ const mailPicker = $("mailPicker");
 const pickGmail = $("pickGmail");
 const pickApple = $("pickApple");
 const pickCancel = $("pickCancel");
+const pickHint = $("pickHint");
 
 /* state */
 let supplier = "";
@@ -685,6 +777,7 @@ function openAppleMail(to, subject, body){
 }
 function openMailPicker(payload){
   pendingMail = payload;
+  pickHint.textContent = "";
   mailPicker.classList.remove("hidden");
 }
 function closeMailPicker(){
@@ -709,15 +802,6 @@ pickCancel.addEventListener("click", closeMailPicker);
 mailPicker.addEventListener("click", (e)=>{ if(e.target === mailPicker) closeMailPicker(); });
 
 /* tokens */
-function insertAtCursor(el, text){
-  if(!el) return;
-  const start = (el.selectionStart ?? el.value.length);
-  const end = (el.selectionEnd ?? el.value.length);
-  el.value = el.value.slice(0, start) + text + el.value.slice(end);
-  const pos = start + text.length;
-  el.focus();
-  el.setSelectionRange(pos, pos);
-}
 function tokenMapFromSelected(){
   const customer = getAny(selected, ["Customer"]) || "";
   const orderId = getAny(selected, ["Order ID","OrderID"]) || "";
@@ -760,6 +844,8 @@ function findTemplateByLabelLang_(label, lang){
     String(t.language || "").trim().toLowerCase() === lg
   ) || null;
 }
+
+/* ✅ show server error instead of generic “Save failed” */
 async function upsertTemplate_(label, lang, subject, body, msgEl){
   if(!isMasterLogin()) return;
 
@@ -776,18 +862,21 @@ async function upsertTemplate_(label, lang, subject, body, msgEl){
   try{
     const data = await jsonp(url);
     if(!data || !data.ok){
-      if(msgEl) msgEl.innerHTML = `<span style="color:var(--bad)">Save failed.</span>`;
-      return;
+      const err = (data && data.error) ? String(data.error) : "Unknown error";
+      if(msgEl) msgEl.innerHTML = `<span style="color:var(--bad)">Save failed: ${escapeHTML(err)}</span>`;
+      return false;
     }
     templatesCache = await loadAllTemplates_();
     renderSavedTemplates_();
     if(msgEl) msgEl.innerHTML = `<span style="color:var(--ok)">Saved ✓</span>`;
-  }catch(_){
-    if(msgEl) msgEl.innerHTML = `<span style="color:var(--bad)">Save failed.</span>`;
+    return true;
+  }catch(err){
+    if(msgEl) msgEl.innerHTML = `<span style="color:var(--bad)">Save failed: ${escapeHTML(err && err.message ? err.message : err)}</span>`;
+    return false;
   }
 }
 
-/* ✅ Saved templates list: label left, send right */
+/* ✅ Saved templates list */
 function renderSavedTemplates_(){
   if(!isMasterLogin()){
     savedTemplatesList.textContent = "";
@@ -798,7 +887,7 @@ function renderSavedTemplates_(){
     return;
   }
 
-  const map = tokenMapFromSelected();
+  const map = selected ? tokenMapFromSelected() : {};
   const list = templatesCache
     .slice()
     .sort((a,b)=> (String(a.label||"").localeCompare(String(b.label||"")) || String(a.language||"").localeCompare(String(b.language||""))));
@@ -829,7 +918,6 @@ function renderSavedTemplates_(){
       const t = templatesCache.find(x=> String(x.id)===String(id));
       if(!t) return;
 
-      // decide TO based on label
       const label = String(t.label||"").toUpperCase();
       let to = "";
       if(label === LABEL_CUSTOMER){
@@ -837,10 +925,8 @@ function renderSavedTemplates_(){
       }else if(label === LABEL_SUPPLIER){
         to = getAny(selected, ["Mail Supplier","MailSupplier"]);
       }else{
-        // unknown: default to customer
         to = getAny(selected, ["Mail Customer","MailCustomer"]);
       }
-
       if(!to){
         mailMsg.innerHTML = `<span style="color:var(--warn)">No email found for this template.</span>`;
         return;
@@ -1111,12 +1197,11 @@ function openRow(rowId){
   mailMsg.textContent = "";
   msg.textContent = "";
 
-  // keep templates editor collapsed when opening a row
+  // keep panels collapsed
   if(isMasterLogin()){
-    templatesBody.classList.add("hidden");
-    templatesPlus.textContent = "+";
-    custMsg.textContent = "";
-    supMsg.textContent = "";
+    templatesBody.classList.add("hidden"); templatesPlus.textContent = "+";
+    addBody.classList.add("hidden"); addPlus.textContent = "+";
+    addMsg.textContent = "";
     renderSavedTemplates_();
   }
 }
@@ -1166,25 +1251,7 @@ async function save(){
   }
 }
 
-/* mail supplier/customer - uses saved template if exists else empty */
-function templateOrEmpty_(label, lang){
-  const t = findTemplateByLabelLang_(label, lang);
-  return t ? { subject: t.subject || "", body: t.body || "" } : { subject:"", body:"" };
-}
-
-function mailSupplierRow(rowId, lang){
-  if(!isMasterLogin()) return;
-  const row = orders.find(x => Number(x.rowId) === rowId);
-  if(!row){ msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>"; return; }
-
-  const to = getAny(row, ["Mail Supplier","MailSupplier"]);
-  if(!to){ msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>"; return; }
-
-  const tpl = templateOrEmpty_(LABEL_SUPPLIER, lang);
-  const map = tokenMapFromSelected();
-  openMailPicker({ to, subject: applyTokens(tpl.subject, map), body: applyTokens(tpl.body, map) });
-}
-
+/* mail buttons use CUSTOMER template */
 async function mailCustomer(lang){
   if(!isMasterLogin() || !selected) return;
 
@@ -1193,16 +1260,14 @@ async function mailCustomer(lang){
     mailMsg.innerHTML = "<span style='color:var(--warn)'>No customer email found.</span>";
     return;
   }
-
-  const tpl = templateOrEmpty_(LABEL_CUSTOMER, lang);
+  const t = findTemplateByLabelLang_(LABEL_CUSTOMER, lang) || {subject:"", body:""};
   const map = tokenMapFromSelected();
 
   openMailPicker({
     to,
-    subject: applyTokens(tpl.subject, map),
-    body: applyTokens(tpl.body, map),
+    subject: applyTokens(t.subject || "", map),
+    body: applyTokens(t.body || "", map),
     afterOpen: async () => {
-      mailMsg.textContent = "Mail opened. Saving Completed…";
       const res = await setCompleted(selected.rowId, true);
       if(!res.ok){
         mailMsg.innerHTML = `<span style="color:var(--warn)">Mail opened ✓ (could not save Completed)</span>`;
@@ -1214,24 +1279,19 @@ async function mailCustomer(lang){
   });
 }
 
-/* editor load/save */
-function loadEditor_(label, lang, subjectEl, bodyEl, msgEl){
-  const t = findTemplateByLabelLang_(label, lang);
-  subjectEl.value = t ? (t.subject || "") : "";
-  bodyEl.value = t ? (t.body || "") : "";
-  if(msgEl) msgEl.textContent = "";
-}
-async function saveEditor_(label, lang, subjectEl, bodyEl, msgEl, saveBtnEl){
-  const subject = (subjectEl.value || "").trim();
-  const body = (bodyEl.value || "").trim();
-  if(!subject && !body){
-    msgEl.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`;
-    return;
-  }
-  saveBtnEl.disabled = true;
-  msgEl.textContent = "Saving…";
-  await upsertTemplate_(label, lang, subject, body, msgEl);
-  saveBtnEl.disabled = false;
+/* mail supplier buttons use SUPPLIER template */
+function mailSupplierRow(rowId, lang){
+  if(!isMasterLogin()) return;
+  const row = orders.find(x => Number(x.rowId) === rowId);
+  if(!row){ msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>"; return; }
+
+  const to = getAny(row, ["Mail Supplier","MailSupplier"]);
+  if(!to){ msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>"; return; }
+
+  const t = findTemplateByLabelLang_(LABEL_SUPPLIER, lang) || {subject:"", body:""};
+  const map = tokenMapFromSelected();
+
+  openMailPicker({ to, subject: applyTokens(t.subject || "", map), body: applyTokens(t.body || "", map) });
 }
 
 /* create order */
@@ -1290,9 +1350,8 @@ async function bootstrapAfterLogin_(){
 
   await loadOrders();
 
-  // collapsed by default
-  templatesBody.classList.add("hidden");
-  templatesPlus.textContent = "+";
+  templatesBody.classList.add("hidden"); templatesPlus.textContent = "+";
+  addBody.classList.add("hidden"); addPlus.textContent = "+";
   renderSavedTemplates_();
 }
 
@@ -1343,55 +1402,131 @@ newOrderToggle.addEventListener("click", ()=>{
 });
 createBtn.addEventListener("click", createOrder);
 
-/* edit templates toggle */
+/* toggle panels */
 templatesToggle.addEventListener("click", async ()=>{
   if(!isMasterLogin()) return;
   const isHidden = templatesBody.classList.toggle("hidden");
   templatesPlus.textContent = isHidden ? "+" : "–";
-
   if(!isHidden){
-    // refresh templates each time you open editor
     templatesCache = await loadAllTemplates_();
     renderSavedTemplates_();
-    loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg);
-    loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg);
+  }
+});
+addToggle.addEventListener("click", async ()=>{
+  if(!isMasterLogin()) return;
+  const isHidden = addBody.classList.toggle("hidden");
+  addPlus.textContent = isHidden ? "+" : "–";
+  if(!isHidden){
+    templatesCache = await loadAllTemplates_();
+    renderSavedTemplates_();
   }
 });
 
-/* customer editor */
-custLang.addEventListener("change", ()=>{
-  loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg);
-});
-custLoad.addEventListener("click", ()=>{
-  loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg);
-});
-custSave.addEventListener("click", ()=>{
-  saveEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg, custSave);
+/* editor load/save */
+function loadEditor_(label, lang, subjectEl, bodyEl, msgEl){
+  const t = findTemplateByLabelLang_(label, lang);
+  subjectEl.value = t ? (t.subject || "") : "";
+  bodyEl.value = t ? (t.body || "") : "";
+  if(msgEl) msgEl.textContent = "";
+}
+
+custLang.addEventListener("change", ()=> loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg));
+custLoad.addEventListener("click", ()=> loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg));
+custSave.addEventListener("click", async ()=>{
+  const lang = (custLang.value||"en").toLowerCase();
+  const subject = (custSubject.value||"").trim();
+  const body = (custBody.value||"").trim();
+  if(!subject && !body){ custMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`; return; }
+  custSave.disabled = true;
+  custMsg.textContent = "Saving…";
+  await upsertTemplate_(LABEL_CUSTOMER, lang, subject, body, custMsg);
+  custSave.disabled = false;
 });
 
-/* supplier editor */
-supLang.addEventListener("change", ()=>{
-  loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg);
-});
-supLoad.addEventListener("click", ()=>{
-  loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg);
-});
-supSave.addEventListener("click", ()=>{
-  saveEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg, supSave);
+supLang.addEventListener("change", ()=> loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg));
+supLoad.addEventListener("click", ()=> loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg));
+supSave.addEventListener("click", async ()=>{
+  const lang = (supLang.value||"en").toLowerCase();
+  const subject = (supSubject.value||"").trim();
+  const body = (supBody.value||"").trim();
+  if(!subject && !body){ supMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`; return; }
+  supSave.disabled = true;
+  supMsg.textContent = "Saving…";
+  await upsertTemplate_(LABEL_SUPPLIER, lang, subject, body, supMsg);
+  supSave.disabled = false;
 });
 
-/* token insert */
-custTokCustomer.addEventListener("click", ()=> insertAtCursor(custBody, "{{Customer}}"));
-custTokOrderID.addEventListener("click", ()=> insertAtCursor(custBody, "{{OrderID}}"));
-custTokCarrier.addEventListener("click", ()=> insertAtCursor(custBody, "{{Carrier}}"));
-custTokTrackingnumber.addEventListener("click", ()=> insertAtCursor(custBody, "{{Trackingnumber}}"));
-custTokTrackinglink.addEventListener("click", ()=> insertAtCursor(custBody, "{{Trackinglink}}"));
+/* ========= ADD templates (1..5) =========
+   Stored as label: TEMPLATE_1 ... TEMPLATE_5
+   Language from dropdown
+   "Edit" loads into customer editor (so you can edit subject/body and then save)
+   "Send" sends that template to customer (for now)
+*/
+function getAddLang(n){ return ($("addLang"+n).value || "en").toLowerCase(); }
+function getAddCustomLabel(n){ return ($("addLabel"+n).value || "").trim(); }
+function getTemplateLabelForSlot(n){ return `TEMPLATE_${n}`; }
 
-supTokCustomer.addEventListener("click", ()=> insertAtCursor(supBody, "{{Customer}}"));
-supTokOrderID.addEventListener("click", ()=> insertAtCursor(supBody, "{{OrderID}}"));
-supTokCarrier.addEventListener("click", ()=> insertAtCursor(supBody, "{{Carrier}}"));
-supTokTrackingnumber.addEventListener("click", ()=> insertAtCursor(supBody, "{{Trackingnumber}}"));
-supTokTrackinglink.addEventListener("click", ()=> insertAtCursor(supBody, "{{Trackinglink}}"));
+async function editSlot(n){
+  if(!isMasterLogin()) return;
+  const lang = getAddLang(n);
+  const label = getTemplateLabelForSlot(n);
+
+  // open edit templates panel and load into CUSTOMER editor fields (quickest UX)
+  templatesBody.classList.remove("hidden");
+  templatesPlus.textContent = "–";
+  templatesCache = await loadAllTemplates_();
+
+  custLang.value = lang;
+  loadEditor_(label, lang, custSubject, custBody, custMsg);
+  custMsg.innerHTML = `<span class="muted">Editing slot ${n} (${label}, ${lang.toUpperCase()})</span>`;
+
+  // When you click Save in customer editor, it saves CUSTOMER label.
+  // So we override the customer save button behavior temporarily for slot edit.
+  custSave.onclick = async ()=>{
+    const subject = (custSubject.value||"").trim();
+    const body = (custBody.value||"").trim();
+    if(!subject && !body){
+      custMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`;
+      return;
+    }
+    custSave.disabled = true;
+    custMsg.textContent = "Saving…";
+    await upsertTemplate_(label, lang, subject, body, custMsg);
+    custSave.disabled = false;
+  };
+
+  renderSavedTemplates_();
+}
+
+function sendSlot(n){
+  if(!isMasterLogin() || !selected) return;
+  const lang = getAddLang(n);
+  const label = getTemplateLabelForSlot(n);
+  const t = findTemplateByLabelLang_(label, lang);
+  if(!t){
+    addMsg.innerHTML = `<span style="color:var(--warn)">Template ${n} not found yet. Click Edit and save first.</span>`;
+    return;
+  }
+  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
+  if(!to){
+    addMsg.innerHTML = `<span style="color:var(--warn)">No customer email found.</span>`;
+    return;
+  }
+  const map = tokenMapFromSelected();
+  openMailPicker({ to, subject: applyTokens(t.subject||"", map), body: applyTokens(t.body||"", map) });
+}
+
+for(let i=1;i<=5;i++){
+  $("addEdit"+i).addEventListener("click", ()=> editSlot(i));
+  $("addSend"+i).addEventListener("click", ()=> sendSlot(i));
+}
+
+/* Also restore default customer save on load (so it doesn't stay overridden forever) */
+function restoreCustomerSaveDefault_(){
+  custSave.onclick = null;
+}
+templatesToggle.addEventListener("click", restoreCustomerSaveDefault_);
+addToggle.addEventListener("click", restoreCustomerSaveDefault_);
 </script>
 </body>
 </html>
