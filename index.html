@@ -33,7 +33,7 @@
     }
     select{appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:none}
 
-    /* ✅ kill yellow autofill (Chrome/Safari) */
+    /* kill yellow autofill (Chrome/Safari) */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
@@ -151,7 +151,7 @@
       text-overflow:ellipsis;
       max-width:520px;
     }
-    /* ✅ Mail log text stays inside card (wrap) */
+    /* mail log text wrap inside card */
     .tplMeta{
       color:var(--muted);
       font-size:12px;
@@ -161,7 +161,7 @@
       max-width:520px;
     }
 
-    /* ✅ more spacing between mail templates */
+    /* more spacing between saved templates */
     #indepTemplatesList{display:flex;flex-direction:column;gap:10px}
   </style>
 </head>
@@ -345,10 +345,7 @@
                     <option value="fr">FR</option>
                   </select>
                 </div>
-                <div>
-                  <label style="margin-top:0">Template name</label>
-                  <input id="editCustomerName" />
-                </div>
+                <div></div>
               </div>
 
               <label>Subject</label>
@@ -391,10 +388,7 @@
                     <option value="nl">NL</option>
                   </select>
                 </div>
-                <div>
-                  <label style="margin-top:0">Template name</label>
-                  <input id="editSupplierName" />
-                </div>
+                <div></div>
               </div>
 
               <label>Subject</label>
@@ -530,7 +524,7 @@
 </div>
 
 <script>
-/** ✅ Put your /exec URL here */
+/** Put your /exec URL here */
 const API_BASE = "https://script.google.com/macros/s/AKfycbwGl45ux88ipi89FwZEN5b5__od-PjyXGy9nW3Kp_WCX6TaGRRye5mU4NytLF12DIvrDg/exec";
 const MASTER_SUPPLIER_NAME = "ALL";
 const $ = (id)=>document.getElementById(id);
@@ -840,14 +834,12 @@ function renderIndepTemplates_(){
 
 function fillCustomerEditorFromLang_(lang){
   const t = findTpl_(customerTemplates, lang);
-  $("editCustomerName").value = t ? (t.label || "DEFAULT") : "DEFAULT";
   $("editCustomerSubject").value = t ? (t.subject||"") : "";
   $("editCustomerBodyText").value = t ? (t.body||"") : "";
   $("editCustomerMsg").textContent = "";
 }
 function fillSupplierEditorFromLang_(lang){
   const t = findTpl_(supplierTemplates, lang);
-  $("editSupplierName").value = t ? (t.label || "DEFAULT") : "DEFAULT";
   $("editSupplierSubject").value = t ? (t.subject||"") : "";
   $("editSupplierBodyText").value = t ? (t.body||"") : "";
   $("editSupplierMsg").textContent = "";
@@ -896,7 +888,6 @@ async function saveIndepTemplate_(){
 
 async function saveCustomerTemplate_(){
   const lang = ($("editCustomerLang").value||"en").toLowerCase();
-  const name = ($("editCustomerName").value || "DEFAULT").trim();
   const subject = ($("editCustomerSubject").value||"").trim();
   const body = ($("editCustomerBodyText").value||"").trim();
   const msg = $("editCustomerMsg");
@@ -907,7 +898,7 @@ async function saveCustomerTemplate_(){
     `action=customer_upsert&supplierKey=${encodeURIComponent(supplierKey)}` +
     (existing?.id ? `&id=${encodeURIComponent(existing.id)}` : "") +
     `&language=${encodeURIComponent(lang)}` +
-    `&label=${encodeURIComponent(name)}` +
+    `&label=${encodeURIComponent("DEFAULT")}` +
     `&subject=${encodeURIComponent(subject)}` +
     `&body=${encodeURIComponent(body)}`
   ).catch(()=>null);
@@ -922,7 +913,6 @@ async function saveCustomerTemplate_(){
 
 async function saveSupplierTemplate_(){
   const lang = ($("editSupplierLang").value||"en").toLowerCase();
-  const name = ($("editSupplierName").value || "DEFAULT").trim();
   const subject = ($("editSupplierSubject").value||"").trim();
   const body = ($("editSupplierBodyText").value||"").trim();
   const msg = $("editSupplierMsg");
@@ -933,7 +923,7 @@ async function saveSupplierTemplate_(){
     `action=supplier_upsert&supplierKey=${encodeURIComponent(supplierKey)}` +
     (existing?.id ? `&id=${encodeURIComponent(existing.id)}` : "") +
     `&language=${encodeURIComponent(lang)}` +
-    `&label=${encodeURIComponent(name)}` +
+    `&label=${encodeURIComponent("DEFAULT")}` +
     `&subject=${encodeURIComponent(subject)}` +
     `&body=${encodeURIComponent(body)}`
   ).catch(()=>null);
