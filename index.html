@@ -56,8 +56,6 @@
       box-shadow:0 0 0 4px rgba(37,99,235,.12)
     }
     textarea{resize:vertical}
-
-    /* ✅ consistent select styling */
     select{
       appearance:none;
       -webkit-appearance:none;
@@ -196,10 +194,8 @@
       user-select:none;
     }
     .plus{font-weight:800;font-size:18px;line-height:1;color:var(--muted)}
-
     .flag{font-size:14px;line-height:1}
 
-    /* saved independent templates list */
     .tmplRow{
       display:flex;justify-content:space-between;gap:12px;align-items:center;
       border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:10px;
@@ -216,6 +212,20 @@
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media (max-width:520px){.grid2{grid-template-columns:1fr}}
     .topRightTools{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+
+    /* ✅ right-most checkbox column */
+    .sentCell{ text-align:center; width:80px; }
+    .sentPill{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:34px;height:26px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .sentPill.yes{ border-color:rgba(22,163,74,.35); background:rgba(22,163,74,.08); color:var(--ok); }
+    .sentPill.no{ border-color:rgba(220,38,38,.25); background:rgba(220,38,38,.06); color:var(--bad); }
   </style>
 </head>
 <body>
@@ -264,6 +274,7 @@
             <div class="kvBlock" style="flex:1; min-width:0">
               <div class="kvLabel">Customer</div>
               <div class="kvValue" id="customerLabel">—</div>
+              <div id="customerMailLine" class="smallLine hidden"></div>
               <div id="supplierLine" class="smallLine hidden"></div>
               <div id="orderLine" class="smallLine hidden"></div>
             </div>
@@ -300,16 +311,30 @@
               <button class="btn" id="mc_fr"><span class="flag">🇫🇷</span> FR</button>
             </div>
 
-            <!-- ✅ Tokens (live values from opened customer) -->
-            <div id="tokenBar" class="row" style="margin-top:10px;gap:8px">
-              <button class="btn" type="button" data-token="{{Customer}}">{{Customer}} <span class="muted" id="tvCustomer"></span></button>
-              <button class="btn" type="button" data-token="{{OrderID}}">{{OrderID}} <span class="muted" id="tvOrderID"></span></button>
-              <button class="btn" type="button" data-token="{{Carrier}}">{{Carrier}} <span class="muted" id="tvCarrier"></span></button>
-              <button class="btn" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}} <span class="muted" id="tvTrackingnumber"></span></button>
-              <button class="btn" type="button" data-token="{{Trackinglink}}">{{Trackinglink}} <span class="muted" id="tvTrackinglink"></span></button>
+            <!-- collapsible customer details (shows full values; tokens use first name for {{Customer}} in mail) -->
+            <div class="toggleRow" id="custDetailsToggle" style="margin-top:10px">
+              <div class="sectionTitle">Customer details</div>
+              <div class="plus" id="custDetailsPlus">+</div>
+            </div>
+            <div id="custDetailsBody" class="hidden" style="margin-top:10px">
+              <div class="hint" style="margin-top:0">
+                <div>{{Customer}} <span id="tvCustomerFull"></span></div>
+                <div>{{OrderID}} <span id="tvOrderID"></span></div>
+                <div>{{Carrier}} <span id="tvCarrier"></span></div>
+                <div>{{Trackingnumber}} <span id="tvTrackingnumber"></span></div>
+                <div>{{Trackinglink}} <span id="tvTrackinglink"></span></div>
+              </div>
+
+              <div id="tokenBar" class="row" style="margin-top:10px;gap:8px">
+                <button class="btn" type="button" data-token="{{Customer}}">{{Customer}}</button>
+                <button class="btn" type="button" data-token="{{OrderID}}">{{OrderID}}</button>
+                <button class="btn" type="button" data-token="{{Carrier}}">{{Carrier}}</button>
+                <button class="btn" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}}</button>
+                <button class="btn" type="button" data-token="{{Trackinglink}}">{{Trackinglink}}</button>
+              </div>
             </div>
 
-            <!-- ✅ Saved independent templates under flags -->
+            <!-- Saved independent templates under flags -->
             <div class="divider"></div>
             <div class="sectionTitle">Saved templates</div>
             <div id="indepList" class="muted" style="font-size:13px;margin-top:6px">Loading…</div>
@@ -423,13 +448,14 @@
         <table class="table">
           <thead>
             <tr>
-              <th style="width:60%">Customer</th>
+              <th style="width:55%">Customer</th>
               <th style="width:170px;text-align:center">Status</th>
               <th style="width:300px">Action</th>
+              <th class="sentCell" title="Customer received shipping info">Sent</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="3" class="muted">Loading…</td></tr>
+            <tr><td colspan="4" class="muted">Loading…</td></tr>
           </tbody>
         </table>
 
@@ -439,7 +465,7 @@
   </div>
 </section>
 
-<!-- ✅ Mail picker modal -->
+<!-- Mail picker modal -->
 <div id="mailPicker" class="hidden" style="
   position:fixed;inset:0;background:rgba(15,23,42,.35);
   display:grid;place-items:center;padding:18px;z-index:9999">
@@ -460,7 +486,7 @@
 /* =========================================================
    CONFIG
    ========================================================= */
-const API_BASE = "https://script.google.com/macros/s/AKfycbwABxwxQxcRcVmr_baVx626raxotU_mp-ilbj1P6ONwoNtG3A5ztZS1gGc7Oo6OeDfr8w/exec";
+const API_BASE = "PASTE_YOUR_SCRIPT_EXEC_URL_HERE";
 const MASTER_SUPPLIER_NAME = "ALL";
 const DEFAULT_LABEL = "DEFAULT";
 
@@ -549,11 +575,19 @@ function showPortal(){
 }
 
 /* =========================================================
-   TOKENS (live, based on opened order + current tracking inputs)
+   TOKENS
+   - {{Customer}} becomes FIRST NAME in mail
+   - Customer details toggle shows full values
    ========================================================= */
+function firstNameFromCustomer_(full){
+  const s = String(full||"").trim();
+  if(!s) return "";
+  return s.split(/\s+/)[0] || s;
+}
 function tokenMap(){
+  const fullCustomer = getAny(selected, ["Customer"]) || "";
   return {
-    "{{Customer}}": getAny(selected, ["Customer"]) || "",
+    "{{Customer}}": firstNameFromCustomer_(fullCustomer),
     "{{OrderID}}": getAny(selected, ["Order ID","OrderID"]) || "",
     "{{Carrier}}": ($("carrier").value.trim() || getAny(selected, ["Carrier"]) || ""),
     "{{Trackingnumber}}": ($("trackingNumber").value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]) || ""),
@@ -566,20 +600,16 @@ function applyTokens(txt){
   for(const k of Object.keys(m)) out = out.split(k).join(String(m[k]||""));
   return out;
 }
-function shortVal_(s){
-  const v = String(s || "").trim();
-  if(!v) return "—";
-  return v.length > 24 ? (v.slice(0, 24) + "…") : v;
-}
 function updateTokenPreview_(){
+  const fullCustomer = selected ? (getAny(selected, ["Customer"]) || "") : "";
   const m = selected ? tokenMap() : {
     "{{Customer}}":"", "{{OrderID}}":"", "{{Carrier}}":"", "{{Trackingnumber}}":"", "{{Trackinglink}}":""
   };
   const set = (id, val)=>{
     const el = $(id);
-    if(el) el.textContent = " " + shortVal_(val);
+    if(el) el.textContent = String(val||"") ? (" " + String(val||"")) : " —";
   };
-  set("tvCustomer", m["{{Customer}}"]);
+  set("tvCustomerFull", fullCustomer);
   set("tvOrderID", m["{{OrderID}}"]);
   set("tvCarrier", m["{{Carrier}}"]);
   set("tvTrackingnumber", m["{{Trackingnumber}}"]);
@@ -614,8 +644,7 @@ function bindTokenButtons_(){
   bar.querySelectorAll("button[data-token]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const token = btn.getAttribute("data-token");
-      const fallback =
-        $("indepBody") || $("custBody") || $("supBody");
+      const fallback = $("indepBody") || $("custBody") || $("supBody");
       const target = lastFocusedField || fallback;
       if(!target) return;
       insertAtCursor_(target, token);
@@ -633,7 +662,7 @@ function bindTrackingLiveTokenUpdates_(){
 }
 
 /* =========================================================
-   MAIL PICKER (with afterOpen callback)
+   MAIL PICKER (afterOpen)
    ========================================================= */
 const mailPicker = $("mailPicker");
 const pickGmail = $("pickGmail");
@@ -741,7 +770,7 @@ async function loadAllTemplates_(){
 }
 
 /* =========================================================
-   RENDER INDEPENDENT LIST (under customer flags)
+   RENDER INDEPENDENT LIST
    ========================================================= */
 function renderIndepList_(){
   const wrap = $("indepList");
@@ -931,7 +960,7 @@ async function supSave_(){
 }
 
 /* =========================================================
-   MAIL CUSTOMER (uses Customer DEFAULT + saves Completed after opening)
+   MAIL CUSTOMER (uses Customer DEFAULT + sets Completed TRUE)
    ========================================================= */
 async function mailCustomer(lang){
   if(!isMasterLogin() || !selected) return;
@@ -967,46 +996,8 @@ async function mailCustomer(lang){
 
 /* =========================================================
    SUPPLIER MAIL BUTTONS (EN/NL) in table (master-only)
+   - now uses saved Supplier DEFAULT templates
    ========================================================= */
-function supplierMailTemplate(lang, supplierName, customerName, orderId){
-  if(lang === "nl"){
-    return {
-      subject: `Tracking nodig – Order ${orderId || ""}`.trim(),
-      body:
-`Hi ${supplierName || "daar"},
-
-Kun je de verzendgegevens aanleveren voor onderstaande order?
-
-Customer: ${customerName || "-"}
-Order ID: ${orderId || "-"}
-
-Graag terugkoppelen met:
-- Carrier
-- Tracking number
-- Tracking link
-
-Dank!`
-    };
-  }
-  return {
-    subject: `Tracking needed – Order ${orderId || ""}`.trim(),
-    body:
-`Hi ${supplierName || "there"},
-
-Could you please provide the shipment details for the order below?
-
-Customer: ${customerName || "-"}
-Order ID: ${orderId || "-"}
-
-Please reply with:
-- Carrier
-- Tracking number
-- Tracking link
-
-Thank you!`
-  };
-}
-
 function mailSupplierRow(rowId, lang){
   if(!isMasterLogin()) return;
 
@@ -1017,17 +1008,18 @@ function mailSupplierRow(rowId, lang){
   }
 
   const to = getAny(row, ["Mail Supplier","MailSupplier"]);
-  const supplierName = getAny(row, ["Supplier"]);
-  const customerName = getAny(row, ["Customer"]);
-  const orderId = getAny(row, ["Order ID","OrderID"]);
-
   if(!to){
     $("msg").innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>";
     return;
   }
 
-  const tpl = supplierMailTemplate(lang, supplierName, customerName, orderId);
-  openMailPicker({ to, subject: tpl.subject, body: tpl.body });
+  const t = findTemplate(supplierTemplates, lang, DEFAULT_LABEL) || { subject:"", body:"" };
+
+  openMailPicker({
+    to,
+    subject: applyTokens(t.subject||""),
+    body: applyTokens(t.body||""),
+  });
 }
 
 /* =========================================================
@@ -1039,6 +1031,7 @@ async function loadOrders(){
   $("noSelection").classList.remove("hidden");
 
   $("customerLabel").textContent = "—";
+  $("customerMailLine").classList.add("hidden");
   $("supplierLine").classList.add("hidden");
   $("orderLine").classList.add("hidden");
   setStatus("No selection", false);
@@ -1048,7 +1041,7 @@ async function loadOrders(){
   $("indepMsg").textContent = "";
   $("indepList").textContent = "Loading…";
 
-  $("tbody").innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
+  $("tbody").innerHTML = "<tr><td colspan='4' class='muted'>Loading…</td></tr>";
 
   const url = isMasterLogin()
     ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}`
@@ -1058,7 +1051,7 @@ async function loadOrders(){
 
   if(!data || !data.ok){
     const err = escapeHTML((data && data.error) || "Error");
-    $("tbody").innerHTML = `<tr><td colspan="3" class="muted">${err}</td></tr>`;
+    $("tbody").innerHTML = `<tr><td colspan="4" class="muted">${err}</td></tr>`;
     return;
   }
 
@@ -1072,7 +1065,7 @@ function renderOrders(){
   tb.innerHTML = "";
 
   if(!orders.length){
-    tb.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="4" class="muted">No orders found.</td></tr>`;
     return;
   }
 
@@ -1080,9 +1073,11 @@ function renderOrders(){
     const ok = trackingComplete(o);
     const sup = getAny(o,["Supplier"]);
     const oid = getAny(o,["Order ID","OrderID"]);
+    const mailC = getAny(o, ["Mail Customer","MailCustomer"]);
 
     const supplierLineHtml = (isMasterLogin() && sup) ? `<div class="smallLine">${escapeHTML(sup)}</div>` : "";
     const orderLineHtml = (oid) ? `<div class="smallLine">Order ID: ${escapeHTML(oid)}</div>` : "";
+    const mailLineHtml = mailC ? `<div class="smallLine">${escapeHTML(mailC)}</div>` : "";
 
     const mailSupplierBtns = isMasterLogin()
       ? `
@@ -1091,12 +1086,19 @@ function renderOrders(){
       `
       : "";
 
+    // ✅ Sent checkmark based on Completed true/false (master-only gives Completed)
+    const completed = Boolean(o.Completed);
+    const sentHtml = isMasterLogin()
+      ? `<span class="sentPill ${completed ? "yes":"no"}" title="${completed ? "Customer received shipping info":"Not sent yet"}">${completed ? "✓" : "—"}</span>`
+      : `<span class="sentPill" title="Only visible for master">—</span>`;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
         <div class="customerOneLine" title="${escapeHTML(getAny(o,["Customer"]))}">
           ${escapeHTML(getAny(o,["Customer"]))}
         </div>
+        ${mailLineHtml}
         ${supplierLineHtml}
         ${orderLineHtml}
       </td>
@@ -1113,6 +1115,7 @@ function renderOrders(){
           ${mailSupplierBtns}
         </div>
       </td>
+      <td class="sentCell">${sentHtml}</td>
     `;
     tb.appendChild(tr);
   }
@@ -1138,8 +1141,16 @@ function openRow(rowId){
   const c = getAny(selected,["Customer"]) || "—";
   const sup = getAny(selected,["Supplier"]);
   const oid = getAny(selected,["Order ID","OrderID"]);
+  const mailC = getAny(selected, ["Mail Customer","MailCustomer"]);
 
   $("customerLabel").textContent = c;
+
+  if(mailC){
+    $("customerMailLine").textContent = mailC;
+    $("customerMailLine").classList.remove("hidden");
+  } else {
+    $("customerMailLine").classList.add("hidden");
+  }
 
   if(isMasterLogin() && sup){
     $("supplierLine").textContent = sup;
@@ -1273,6 +1284,7 @@ function logout(){
    ========================================================= */
 function setupToggle(toggleId, bodyId, plusId){
   const t = $(toggleId), b = $(bodyId), p = $(plusId);
+  if(!t || !b || !p) return;
   t.addEventListener("click", ()=>{
     const isHidden = b.classList.toggle("hidden");
     p.textContent = isHidden ? "+" : "–";
@@ -1280,7 +1292,7 @@ function setupToggle(toggleId, bodyId, plusId){
 }
 
 /* =========================================================
-   INIT + EVENTS
+   EVENTS + INIT
    ========================================================= */
 $("loginBtn").addEventListener("click", ()=> doLogin());
 $("clearBtn").addEventListener("click", ()=>{ $("keyInput").value=""; $("loginMsg").textContent=""; $("keyInput").focus(); });
@@ -1302,17 +1314,15 @@ $("mc_fr").addEventListener("click", ()=> mailCustomer("fr"));
 setupToggle("indepAddToggle","indepAddBody","indepAddPlus");
 setupToggle("custEditToggle","custEditBody","custEditPlus");
 setupToggle("supEditToggle","supEditBody","supEditPlus");
+setupToggle("custDetailsToggle","custDetailsBody","custDetailsPlus");
 
 $("indepSave").addEventListener("click", indepSave_);
 $("indepDelete").addEventListener("click", indepDelete_);
-
 $("custLoad").addEventListener("click", custLoad_);
 $("custSave").addEventListener("click", custSave_);
-
 $("supLoad").addEventListener("click", supLoad_);
 $("supSave").addEventListener("click", supSave_);
 
-/* bind token insertion + live updates */
 bindFocusTracking_();
 bindTokenButtons_();
 bindTrackingLiveTokenUpdates_();
