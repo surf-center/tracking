@@ -192,8 +192,6 @@
       user-select:none;
     }
     .plus{font-weight:800;font-size:18px;line-height:1;color:var(--muted)}
-    .newOrderBody{margin-top:10px}
-
     .flag{font-size:14px;line-height:1}
     .topRightTools{display:flex;gap:10px;align-items:center;justify-content:flex-end}
     .completedTitle{font-weight:800;color:var(--text);font-size:13px}
@@ -217,28 +215,33 @@
 
     .pillNum{
       display:inline-flex; align-items:center; justify-content:center;
-      width:30px; height:30px;
+      width:34px; height:34px;
       border-radius:12px;
       border:1px solid var(--border);
       background:var(--soft);
       font-weight:800;
     }
-    .addRow{
-      display:grid;
-      grid-template-columns: 34px 110px 1fr auto;
-      gap:10px;
-      align-items:center;
-      padding:10px 12px;
+
+    .slotCard{
       border:1px solid var(--border);
-      border-radius:12px;
       background:#fff;
+      border-radius:12px;
+      padding:12px;
       margin-top:10px;
     }
-    @media (max-width:520px){
-      .addRow{grid-template-columns:34px 1fr; grid-auto-rows:auto}
-      .addRow .rightActions{grid-column:1 / -1; justify-content:flex-end}
+    .slotTop{
+      display:grid;
+      grid-template-columns: 34px 120px 1fr auto auto;
+      gap:10px;
+      align-items:center;
     }
-    .rightActions{display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:nowrap}
+    @media (max-width:520px){
+      .slotTop{grid-template-columns:34px 1fr}
+      .slotTop .slotActions{grid-column:1 / -1; justify-content:flex-end}
+    }
+    .slotActions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:nowrap}
+
+    .tokenRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   </style>
 </head>
 <body>
@@ -280,35 +283,6 @@
     <div class="two">
       <!-- LEFT -->
       <section class="card colStretch">
-        <div id="newOrderWrap" class="hidden">
-          <div class="toggleRow" id="newOrderToggle">
-            <div class="sectionTitle">New order</div>
-            <div class="plus" id="newOrderPlus">+</div>
-          </div>
-
-          <div id="newOrderBody" class="newOrderBody hidden">
-            <label>Customer</label>
-            <input id="newCustomer" />
-
-            <label>Mail Customer</label>
-            <input id="newMailCustomer" type="email" />
-
-            <label>Supplier</label>
-            <select id="newSupplier"></select>
-
-            <label>Order ID</label>
-            <input id="newOrderId" />
-
-            <div class="row" style="margin-top:12px">
-              <button id="createBtn" class="btn primary" type="button">Add order</button>
-            </div>
-
-            <div class="hint" id="createMsg"></div>
-          </div>
-
-          <div class="divider"></div>
-        </div>
-
         <div id="noSelection" class="hint">Open an order from the table.</div>
 
         <div id="form" class="hidden" style="flex:1; display:flex; flex-direction:column;">
@@ -351,18 +325,13 @@
               <button class="btn" id="mc_fr"><span class="flag">🇫🇷</span> FR</button>
             </div>
 
+            <!-- ✅ Customer templates editor (under flags, collapsed) -->
             <div class="divider"></div>
-
-            <!-- ✅ EDIT TEMPLATES (collapsed) -->
-            <div class="toggleRow" id="templatesToggle">
-              <div class="sectionTitle">Edit templates</div>
-              <div class="plus" id="templatesPlus">+</div>
+            <div class="toggleRow" id="custToggle">
+              <div class="sectionTitle">Edit customer templates</div>
+              <div class="plus" id="custPlus">+</div>
             </div>
-
-            <div id="templatesBody" class="newOrderBody hidden">
-              <!-- CUSTOMER EDITOR -->
-              <div style="font-weight:800;font-size:13px;margin-bottom:6px">Customer template</div>
-
+            <div id="custBodyWrap" class="hidden" style="margin-top:10px">
               <div class="grid3">
                 <div>
                   <label style="margin-top:0">Language</label>
@@ -373,12 +342,10 @@
                     <option value="fr">FR</option>
                   </select>
                 </div>
-
                 <div>
                   <label style="margin-top:0">Load</label>
                   <button id="custLoad" class="btn" type="button">Load</button>
                 </div>
-
                 <div class="row" style="justify-content:flex-end; flex-wrap:nowrap">
                   <button id="custSave" class="btn primary" type="button">Save</button>
                 </div>
@@ -390,21 +357,24 @@
               <label>Mail body</label>
               <textarea id="custBody" rows="7" placeholder="Body…"></textarea>
 
-              <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-                <button class="btn" type="button" id="custTokCustomer">{{Customer}}</button>
-                <button class="btn" type="button" id="custTokOrderID">{{OrderID}}</button>
-                <button class="btn" type="button" id="custTokCarrier">{{Carrier}}</button>
-                <button class="btn" type="button" id="custTokTrackingnumber">{{Trackingnumber}}</button>
-                <button class="btn" type="button" id="custTokTrackinglink">{{Trackinglink}}</button>
+              <div class="tokenRow">
+                <button class="btn" type="button" data-token="{{Customer}}">{{Customer}}</button>
+                <button class="btn" type="button" data-token="{{OrderID}}">{{OrderID}}</button>
+                <button class="btn" type="button" data-token="{{Carrier}}">{{Carrier}}</button>
+                <button class="btn" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}}</button>
+                <button class="btn" type="button" data-token="{{Trackinglink}}">{{Trackinglink}}</button>
               </div>
 
-              <div class="hint" id="custMsg" style="margin-top:8px"></div>
+              <div class="hint" id="custMsg"></div>
+            </div>
 
-              <div class="divider"></div>
-
-              <!-- SUPPLIER EDITOR -->
-              <div style="font-weight:800;font-size:13px;margin-bottom:6px">Supplier template</div>
-
+            <!-- ✅ Supplier templates editor (under flags, collapsed) -->
+            <div class="divider"></div>
+            <div class="toggleRow" id="supToggle">
+              <div class="sectionTitle">Edit supplier templates</div>
+              <div class="plus" id="supPlus">+</div>
+            </div>
+            <div id="supBodyWrap" class="hidden" style="margin-top:10px">
               <div class="grid3">
                 <div>
                   <label style="margin-top:0">Language</label>
@@ -413,12 +383,10 @@
                     <option value="nl">NL</option>
                   </select>
                 </div>
-
                 <div>
                   <label style="margin-top:0">Load</label>
                   <button id="supLoad" class="btn" type="button">Load</button>
                 </div>
-
                 <div class="row" style="justify-content:flex-end; flex-wrap:nowrap">
                   <button id="supSave" class="btn primary" type="button">Save</button>
                 </div>
@@ -430,94 +398,43 @@
               <label>Mail body</label>
               <textarea id="supBody" rows="7" placeholder="Body…"></textarea>
 
-              <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap">
-                <button class="btn" type="button" id="supTokCustomer">{{Customer}}</button>
-                <button class="btn" type="button" id="supTokOrderID">{{OrderID}}</button>
-                <button class="btn" type="button" id="supTokCarrier">{{Carrier}}</button>
-                <button class="btn" type="button" id="supTokTrackingnumber">{{Trackingnumber}}</button>
-                <button class="btn" type="button" id="supTokTrackinglink">{{Trackinglink}}</button>
+              <div class="tokenRow">
+                <button class="btn" type="button" data-token="{{Customer}}">{{Customer}}</button>
+                <button class="btn" type="button" data-token="{{OrderID}}">{{OrderID}}</button>
+                <button class="btn" type="button" data-token="{{Carrier}}">{{Carrier}}</button>
+                <button class="btn" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}}</button>
+                <button class="btn" type="button" data-token="{{Trackinglink}}">{{Trackinglink}}</button>
               </div>
 
-              <div class="hint" id="supMsg" style="margin-top:8px"></div>
+              <div class="hint" id="supMsg"></div>
             </div>
 
+            <!-- ✅ Saved templates (ONLY TEMPLATE_1..5), open by default -->
             <div class="divider"></div>
+            <div class="toggleRow" id="savedToggle">
+              <div class="sectionTitle">Saved templates</div>
+              <div class="plus" id="savedPlus">–</div>
+            </div>
 
-            <!-- ✅ ADD TEMPLATES (collapsed) -->
+            <div id="savedBodyWrap" style="margin-top:10px">
+              <div id="savedTemplatesList" class="muted" style="font-size:13px">Loading…</div>
+              <div class="hint" id="savedMsg"></div>
+            </div>
+
+            <!-- ✅ Add templates (slots 1..5), collapsed by default -->
+            <div class="divider"></div>
             <div class="toggleRow" id="addToggle">
               <div class="sectionTitle">Add templates</div>
               <div class="plus" id="addPlus">+</div>
             </div>
 
-            <div id="addBody" class="newOrderBody hidden">
-              <div class="muted" style="font-size:12px;margin-bottom:6px">Add up to 5 templates. Each template is stored with label TEMPLATE_1 … TEMPLATE_5.</div>
-
-              <div class="addRow">
-                <div class="pillNum">1️⃣</div>
-                <select id="addLang1">
-                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
-                </select>
-                <input id="addLabel1" placeholder="Label (optional)" />
-                <div class="rightActions">
-                  <button class="btn primary" id="addEdit1" type="button">Edit</button>
-                  <button class="btn" id="addSend1" type="button">Send</button>
-                </div>
+            <div id="addBodyWrap" class="hidden" style="margin-top:10px">
+              <div class="muted" style="font-size:12px;margin-bottom:6px">
+                Templates are stored as TEMPLATE_1 … TEMPLATE_5 (per language).
               </div>
 
-              <div class="addRow">
-                <div class="pillNum">2️⃣</div>
-                <select id="addLang2">
-                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
-                </select>
-                <input id="addLabel2" placeholder="Label (optional)" />
-                <div class="rightActions">
-                  <button class="btn primary" id="addEdit2" type="button">Edit</button>
-                  <button class="btn" id="addSend2" type="button">Send</button>
-                </div>
-              </div>
-
-              <div class="addRow">
-                <div class="pillNum">3️⃣</div>
-                <select id="addLang3">
-                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
-                </select>
-                <input id="addLabel3" placeholder="Label (optional)" />
-                <div class="rightActions">
-                  <button class="btn primary" id="addEdit3" type="button">Edit</button>
-                  <button class="btn" id="addSend3" type="button">Send</button>
-                </div>
-              </div>
-
-              <div class="addRow">
-                <div class="pillNum">4️⃣</div>
-                <select id="addLang4">
-                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
-                </select>
-                <input id="addLabel4" placeholder="Label (optional)" />
-                <div class="rightActions">
-                  <button class="btn primary" id="addEdit4" type="button">Edit</button>
-                  <button class="btn" id="addSend4" type="button">Send</button>
-                </div>
-              </div>
-
-              <div class="addRow">
-                <div class="pillNum">5️⃣</div>
-                <select id="addLang5">
-                  <option value="en">EN</option><option value="nl">NL</option><option value="de">DE</option><option value="fr">FR</option>
-                </select>
-                <input id="addLabel5" placeholder="Label (optional)" />
-                <div class="rightActions">
-                  <button class="btn primary" id="addEdit5" type="button">Edit</button>
-                  <button class="btn" id="addSend5" type="button">Send</button>
-                </div>
-              </div>
-
-              <div class="hint" id="addMsg" style="margin-top:8px"></div>
-
-              <div class="divider"></div>
-
-              <div style="font-weight:800;font-size:13px;margin-bottom:6px">Saved templates</div>
-              <div id="savedTemplatesList" class="muted" style="font-size:13px">Loading…</div>
+              <div id="slotsWrap"></div>
+              <div class="hint" id="addMsg"></div>
             </div>
 
             <div class="hint" style="margin-top:8px" id="mailMsg"></div>
@@ -542,33 +459,6 @@
           </tbody>
         </table>
 
-        <div id="completedWrap" class="hidden" style="margin-top:12px">
-          <div class="divider"></div>
-
-          <div class="row" style="justify-content:space-between;align-items:flex-end">
-            <div>
-              <div class="completedTitle">Completed orders</div>
-              <div class="muted" style="font-size:12px;margin-top:4px">Search by customer or order id…</div>
-            </div>
-            <input id="completedSearch" placeholder="Search…" style="max-width:340px" />
-          </div>
-
-          <div style="height:10px"></div>
-
-          <table class="table">
-            <thead>
-              <tr>
-                <th style="width:60%">Customer</th>
-                <th style="width:170px;text-align:center">Status</th>
-                <th style="width:300px">Action</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyCompleted">
-              <tr><td colspan="3" class="muted">No completed orders.</td></tr>
-            </tbody>
-          </table>
-        </div>
-
         <div style="flex:1"></div>
       </section>
     </div>
@@ -592,14 +482,58 @@
 
 <script>
 /* CONFIG */
-const API_BASE = "https://script.google.com/macros/s/AKfycby0rOiCDRAw6SGJ_V1l-l6k6ynX900jdReh6be7vaMS5GSGLU5cIQ5SVITkYkyT4nOAzg/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbwaya1-6P3EkiEuOP02THoCVI10vGyVYU9_pOcNaKqx7j0tfjaZUhamLSJ41R5Jw_qcHg/exec";
 const MASTER_SUPPLIER_NAME = "ALL";
 const LABEL_CUSTOMER = "CUSTOMER";
 const LABEL_SUPPLIER = "SUPPLIER";
 
+/* helpers */
 const $ = (id) => document.getElementById(id);
+function escapeHTML(s){
+  return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+}
+function normalizeKey(k){
+  return String(k || "").trim().toLowerCase().replace(/\s+/g," ");
+}
+function getAny(obj, wantedKeys){
+  if(!obj) return "";
+  const map = {};
+  for (const k of Object.keys(obj)) map[normalizeKey(k)] = k;
+  for (const want of wantedKeys){
+    const hit = map[normalizeKey(want)];
+    if(hit){
+      const v = obj[hit];
+      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    }
+  }
+  return "";
+}
+function isMasterLogin(){
+  return String(supplier || "").trim().toLowerCase() === String(MASTER_SUPPLIER_NAME).toLowerCase();
+}
+function jsonp(url){
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Math.random().toString(36).slice(2);
+    const script = document.createElement("script");
 
-/* elements */
+    window[cb] = (data) => {
+      try { delete window[cb]; } catch(_) {}
+      script.remove();
+      resolve(data);
+    };
+
+    script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb;
+    script.onerror = () => {
+      try { delete window[cb]; } catch(_) {}
+      script.remove();
+      reject(new Error("JSONP failed"));
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+/* UI refs */
 const loginView = $("loginView");
 const portalView = $("portalView");
 const keyInput = $("keyInput");
@@ -627,7 +561,6 @@ const trackingLink = $("trackingLink");
 const saveBtn = $("saveBtn");
 const msg = $("msg");
 
-/* mail customer */
 const mailCustomerWrap = $("mailCustomerWrap");
 const mailMsg = $("mailMsg");
 const mc_en = $("mc_en");
@@ -635,11 +568,10 @@ const mc_nl = $("mc_nl");
 const mc_de = $("mc_de");
 const mc_fr = $("mc_fr");
 
-/* edit templates */
-const templatesToggle = $("templatesToggle");
-const templatesPlus = $("templatesPlus");
-const templatesBody = $("templatesBody");
-
+/* customer editor */
+const custToggle = $("custToggle");
+const custPlus = $("custPlus");
+const custBodyWrap = $("custBodyWrap");
 const custLang = $("custLang");
 const custLoad = $("custLoad");
 const custSave = $("custSave");
@@ -647,6 +579,10 @@ const custSubject = $("custSubject");
 const custBody = $("custBody");
 const custMsg = $("custMsg");
 
+/* supplier editor */
+const supToggle = $("supToggle");
+const supPlus = $("supPlus");
+const supBodyWrap = $("supBodyWrap");
 const supLang = $("supLang");
 const supLoad = $("supLoad");
 const supSave = $("supSave");
@@ -654,70 +590,35 @@ const supSubject = $("supSubject");
 const supBody = $("supBody");
 const supMsg = $("supMsg");
 
+/* saved templates */
+const savedToggle = $("savedToggle");
+const savedPlus = $("savedPlus");
+const savedBodyWrap = $("savedBodyWrap");
+const savedTemplatesList = $("savedTemplatesList");
+const savedMsg = $("savedMsg");
+
 /* add templates */
 const addToggle = $("addToggle");
 const addPlus = $("addPlus");
-const addBody = $("addBody");
+const addBodyWrap = $("addBodyWrap");
+const slotsWrap = $("slotsWrap");
 const addMsg = $("addMsg");
-
-const savedTemplatesList = $("savedTemplatesList");
-
-/* completed */
-const completedWrap = $("completedWrap");
-const completedSearch = $("completedSearch");
-const tbodyCompleted = $("tbodyCompleted");
-
-/* new order */
-const newOrderWrap = $("newOrderWrap");
-const newOrderToggle = $("newOrderToggle");
-const newOrderPlus = $("newOrderPlus");
-const newOrderBody = $("newOrderBody");
-const newCustomer = $("newCustomer");
-const newMailCustomer = $("newMailCustomer");
-const newSupplier = $("newSupplier");
-const newOrderId = $("newOrderId");
-const createBtn = $("createBtn");
-const createMsg = $("createMsg");
 
 /* mail picker */
 const mailPicker = $("mailPicker");
 const pickGmail = $("pickGmail");
 const pickApple = $("pickApple");
 const pickCancel = $("pickCancel");
-const pickHint = $("pickHint");
+let pendingMail = null;
 
 /* state */
 let supplier = "";
 let supplierKey = "";
 let orders = [];
 let selected = null;
-let suppliersList = [];
-let pendingMail = null;
 let templatesCache = [];
 
-/* utils */
-function escapeHTML(s){
-  return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
-}
-function isMasterLogin(){
-  return String(supplier || "").trim().toLowerCase() === String(MASTER_SUPPLIER_NAME).toLowerCase();
-}
-function normalizeKey(k){
-  return String(k || "").trim().toLowerCase().replace(/\s+/g," ");
-}
-function getAny(obj, wantedKeys){
-  if(!obj) return "";
-  const map = {};
-  for (const k of Object.keys(obj)) map[normalizeKey(k)] = k;
-  for (const want of wantedKeys){
-    const hit = map[normalizeKey(want)];
-    if(hit){
-      const v = obj[hit];
-      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
-    }
-  }
-  return "";
-}
+/* status */
 function trackingComplete(o){
   return !!(getAny(o,["Carrier"]) && getAny(o,["Trackingnumber","Tracking Number"]) && getAny(o,["Trackinglink","Tracking Link"]));
 }
@@ -737,26 +638,53 @@ function showPortal(){
   loginView.classList.add("hidden");
   portalView.classList.remove("hidden");
 }
-function jsonp(url){
-  return new Promise((resolve, reject) => {
-    const cb = "cb_" + Math.random().toString(36).slice(2);
-    const script = document.createElement("script");
 
-    window[cb] = (data) => {
-      try { delete window[cb]; } catch(_) {}
-      script.remove();
-      resolve(data);
-    };
+/* token replacement */
+function tokenMapFromSelected(){
+  const customer = getAny(selected, ["Customer"]) || "";
+  const orderId = getAny(selected, ["Order ID","OrderID"]) || "";
+  const Carrier = carrier.value.trim() || getAny(selected, ["Carrier"]) || "";
+  const Trackingnumber = trackingNumber.value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]) || "";
+  const Trackinglink = trackingLink.value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]) || "";
+  return {
+    "{{Customer}}": customer,
+    "{{OrderID}}": orderId,
+    "{{Carrier}}": Carrier,
+    "{{Trackingnumber}}": Trackingnumber,
+    "{{Trackinglink}}": Trackinglink
+  };
+}
+function applyTokens(text, map){
+  let out = String(text || "");
+  for(const k of Object.keys(map)){
+    out = out.split(k).join(String(map[k] || ""));
+  }
+  return out;
+}
 
-    script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb;
-    script.onerror = () => {
-      try { delete window[cb]; } catch(_) {}
-      script.remove();
-      reject(new Error("JSONP failed"));
-    };
+/* ✅ token insertion: works for Trackinglink now */
+let lastFocused = null;
+function trackFocus_(el){
+  if(!el) return;
+  el.addEventListener("focus", ()=>{ lastFocused = el; });
+}
+function insertAtCursor_(el, token){
+  if(!el) return false;
+  if(!(el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return false;
 
-    document.head.appendChild(script);
-  });
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? el.value.length;
+  const v = el.value || "";
+  el.value = v.slice(0, start) + token + v.slice(end);
+  const pos = start + token.length;
+  try{ el.setSelectionRange(pos, pos); }catch(_){}
+  el.focus();
+  return true;
+}
+function insertToken_(token){
+  // Prefer last focused, otherwise fallback to customer body
+  if(lastFocused && insertAtCursor_(lastFocused, token)) return;
+  insertAtCursor_(custBody, token);
 }
 
 /* mail picker */
@@ -777,7 +705,6 @@ function openAppleMail(to, subject, body){
 }
 function openMailPicker(payload){
   pendingMail = payload;
-  pickHint.textContent = "";
   mailPicker.classList.remove("hidden");
 }
 function closeMailPicker(){
@@ -801,30 +728,6 @@ pickApple.addEventListener("click", ()=>{
 pickCancel.addEventListener("click", closeMailPicker);
 mailPicker.addEventListener("click", (e)=>{ if(e.target === mailPicker) closeMailPicker(); });
 
-/* tokens */
-function tokenMapFromSelected(){
-  const customer = getAny(selected, ["Customer"]) || "";
-  const orderId = getAny(selected, ["Order ID","OrderID"]) || "";
-  const Carrier = carrier.value.trim() || getAny(selected, ["Carrier"]) || "";
-  const Trackingnumber = trackingNumber.value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]) || "";
-  const Trackinglink = trackingLink.value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]) || "";
-
-  return {
-    "{{Customer}}": customer,
-    "{{OrderID}}": orderId,
-    "{{Carrier}}": Carrier,
-    "{{Trackingnumber}}": Trackingnumber,
-    "{{Trackinglink}}": Trackinglink
-  };
-}
-function applyTokens(text, map){
-  let out = String(text || "");
-  for(const k of Object.keys(map)){
-    out = out.split(k).join(String(map[k] || ""));
-  }
-  return out;
-}
-
 /* templates API */
 async function loadAllTemplates_(){
   if(!isMasterLogin()) return [];
@@ -836,20 +739,18 @@ async function loadAllTemplates_(){
     return [];
   }
 }
-function findTemplateByLabelLang_(label, lang){
+function findTemplate_(label, lang){
   const L = String(label || "").trim().toUpperCase();
   const lg = String(lang || "").trim().toLowerCase();
   return templatesCache.find(t =>
-    String(t.label || "").trim().toUpperCase() === L &&
-    String(t.language || "").trim().toLowerCase() === lg
+    String(t.label||"").trim().toUpperCase() === L &&
+    String(t.language||"").trim().toLowerCase() === lg
   ) || null;
 }
-
-/* ✅ show server error instead of generic “Save failed” */
 async function upsertTemplate_(label, lang, subject, body, msgEl){
-  if(!isMasterLogin()) return;
+  if(!isMasterLogin()) return false;
 
-  const existing = findTemplateByLabelLang_(label, lang);
+  const existing = findTemplate_(label, lang);
   const url =
     `${API_BASE}?action=upsertMailTemplate` +
     `&supplierKey=${encodeURIComponent(supplierKey)}` +
@@ -876,30 +777,43 @@ async function upsertTemplate_(label, lang, subject, body, msgEl){
   }
 }
 
-/* ✅ Saved templates list */
+/* render saved templates (ONLY TEMPLATE_1..5) */
+function slotEmoji_(n){
+  return ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣"][n] || "⭐";
+}
+function labelToSlot_(label){
+  const m = String(label||"").match(/^TEMPLATE_(\d+)$/i);
+  return m ? Number(m[1]) : 0;
+}
 function renderSavedTemplates_(){
   if(!isMasterLogin()){
     savedTemplatesList.textContent = "";
     return;
   }
-  if(!templatesCache.length){
+  const list = templatesCache
+    .filter(t => /^TEMPLATE_(1|2|3|4|5)$/i.test(String(t.label||"").trim()))
+    .slice()
+    .sort((a,b)=>{
+      const sa = labelToSlot_(a.label);
+      const sb = labelToSlot_(b.label);
+      if(sa !== sb) return sa - sb;
+      return String(a.language||"").localeCompare(String(b.language||""));
+    });
+
+  if(!list.length){
     savedTemplatesList.textContent = "No templates yet.";
     return;
   }
 
-  const map = selected ? tokenMapFromSelected() : {};
-  const list = templatesCache
-    .slice()
-    .sort((a,b)=> (String(a.label||"").localeCompare(String(b.label||"")) || String(a.language||"").localeCompare(String(b.language||""))));
-
   savedTemplatesList.innerHTML = "";
   for(const t of list){
+    const slot = labelToSlot_(t.label);
     const row = document.createElement("div");
     row.className = "tmplRow";
     row.innerHTML = `
       <div class="tmplRowLeft">
-        <div class="tmplLabel">${escapeHTML(String(t.label||""))} (${escapeHTML(String(t.language||"").toUpperCase())})</div>
-        <div class="tmplMeta">${escapeHTML((t.subject||"").slice(0,80))}</div>
+        <div class="tmplLabel">${slotEmoji_(slot)} TEMPLATE_${slot} (${escapeHTML(String(t.language||"").toUpperCase())})</div>
+        <div class="tmplMeta">${escapeHTML((t.subject||"").slice(0,90))}</div>
       </div>
       <div class="row" style="gap:8px;flex-wrap:nowrap">
         <button class="btn" type="button" data-send="${escapeHTML(t.id)}">Send</button>
@@ -911,58 +825,168 @@ function renderSavedTemplates_(){
   savedTemplatesList.querySelectorAll("button[data-send]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       if(!selected){
-        mailMsg.innerHTML = `<span style="color:var(--warn)">Open an order first.</span>`;
+        savedMsg.innerHTML = `<span style="color:var(--warn)">Open an order first.</span>`;
         return;
       }
       const id = btn.dataset.send;
       const t = templatesCache.find(x=> String(x.id)===String(id));
       if(!t) return;
 
-      const label = String(t.label||"").toUpperCase();
-      let to = "";
-      if(label === LABEL_CUSTOMER){
-        to = getAny(selected, ["Mail Customer","MailCustomer"]);
-      }else if(label === LABEL_SUPPLIER){
-        to = getAny(selected, ["Mail Supplier","MailSupplier"]);
-      }else{
-        to = getAny(selected, ["Mail Customer","MailCustomer"]);
-      }
+      const to = getAny(selected, ["Mail Customer","MailCustomer"]);
       if(!to){
-        mailMsg.innerHTML = `<span style="color:var(--warn)">No email found for this template.</span>`;
+        savedMsg.innerHTML = `<span style="color:var(--warn)">No customer email found.</span>`;
         return;
       }
 
+      const map = tokenMapFromSelected();
       openMailPicker({
         to,
-        subject: applyTokens(t.subject || "", map),
-        body: applyTokens(t.body || "", map)
+        subject: applyTokens(t.subject||"", map),
+        body: applyTokens(t.body||"", map)
       });
     });
   });
 }
 
-/* Completed endpoint */
-async function setCompleted(rowId, val){
-  if(!isMasterLogin()) return { ok:false, error:"Not master" };
-  const completedValue = val ? "TRUE" : "FALSE";
-  const url = `${API_BASE}?action=complete&supplierKey=${encodeURIComponent(supplierKey)}&rowId=${encodeURIComponent(rowId)}&Completed=${encodeURIComponent(completedValue)}`;
+/* build Add templates UI (slots 1..5) */
+function buildSlotsUI_(){
+  slotsWrap.innerHTML = "";
+  for(let n=1;n<=5;n++){
+    const label = `TEMPLATE_${n}`;
 
-  try{
-    const data = await jsonp(url);
-    if(data && data.ok) return { ok:true };
-    return { ok:false, error: (data && data.error) ? String(data.error) : "Unknown" };
-  }catch(_){
-    return { ok:false, error:"Could not reach server" };
+    const slot = document.createElement("div");
+    slot.className = "slotCard";
+    slot.innerHTML = `
+      <div class="slotTop">
+        <div class="pillNum">${slotEmoji_(n)}</div>
+        <div>
+          <label style="margin-top:0">Language</label>
+          <select id="slotLang_${n}">
+            <option value="en">EN</option>
+            <option value="nl">NL</option>
+            <option value="de">DE</option>
+            <option value="fr">FR</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-top:0">Subject</label>
+          <input id="slotSubject_${n}" placeholder="Subject…" />
+        </div>
+        <div class="slotActions">
+          <button class="btn" type="button" id="slotLoad_${n}">Load</button>
+          <button class="btn primary" type="button" id="slotSave_${n}">Save</button>
+          <button class="btn" type="button" id="slotSend_${n}">Send</button>
+        </div>
+      </div>
+
+      <label>Body</label>
+      <textarea id="slotBody_${n}" rows="6" placeholder="Body…"></textarea>
+
+      <div class="tokenRow">
+        <button class="btn" type="button" data-token="{{Customer}}">{{Customer}}</button>
+        <button class="btn" type="button" data-token="{{OrderID}}">{{OrderID}}</button>
+        <button class="btn" type="button" data-token="{{Carrier}}">{{Carrier}}</button>
+        <button class="btn" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}}</button>
+        <button class="btn" type="button" data-token="{{Trackinglink}}">{{Trackinglink}}</button>
+      </div>
+
+      <div class="hint" id="slotMsg_${n}"></div>
+    `;
+    slotsWrap.appendChild(slot);
+
+    const langEl = $(`slotLang_${n}`);
+    const subjEl = $(`slotSubject_${n}`);
+    const bodyEl = $(`slotBody_${n}`);
+    const msgEl = $(`slotMsg_${n}`);
+
+    // focus tracking for token insert
+    trackFocus_(subjEl);
+    trackFocus_(bodyEl);
+
+    // load
+    $(`slotLoad_${n}`).addEventListener("click", ()=>{
+      const lang = (langEl.value||"en").toLowerCase();
+      const t = findTemplate_(label, lang);
+      subjEl.value = t ? (t.subject||"") : "";
+      bodyEl.value = t ? (t.body||"") : "";
+      msgEl.textContent = "";
+    });
+
+    // save
+    $(`slotSave_${n}`).addEventListener("click", async ()=>{
+      const lang = (langEl.value||"en").toLowerCase();
+      const subject = (subjEl.value||"").trim();
+      const body = (bodyEl.value||"").trim();
+      if(!subject && !body){
+        msgEl.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`;
+        return;
+      }
+      msgEl.textContent = "Saving…";
+      await upsertTemplate_(label, lang, subject, body, msgEl);
+    });
+
+    // send
+    $(`slotSend_${n}`).addEventListener("click", ()=>{
+      if(!selected){
+        msgEl.innerHTML = `<span style="color:var(--warn)">Open an order first.</span>`;
+        return;
+      }
+      const lang = (langEl.value||"en").toLowerCase();
+      const t = findTemplate_(label, lang);
+      if(!t){
+        msgEl.innerHTML = `<span style="color:var(--warn)">Template not found. Click Load/Save first.</span>`;
+        return;
+      }
+      const to = getAny(selected, ["Mail Customer","MailCustomer"]);
+      if(!to){
+        msgEl.innerHTML = `<span style="color:var(--warn)">No customer email found.</span>`;
+        return;
+      }
+      const map = tokenMapFromSelected();
+      openMailPicker({
+        to,
+        subject: applyTokens(t.subject||"", map),
+        body: applyTokens(t.body||"", map)
+      });
+    });
   }
 }
 
-/* login */
-async function doLogin(withKey){
-  const key = (withKey ?? keyInput.value).trim();
-  if(!key){
-    loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter key.</span>";
+/* mail: customer uses CUSTOMER label per language */
+async function mailCustomer(lang){
+  if(!isMasterLogin() || !selected) return;
+
+  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
+  if(!to){
+    mailMsg.innerHTML = "<span style='color:var(--warn)'>No customer email found.</span>";
     return;
   }
+
+  const t = findTemplate_(LABEL_CUSTOMER, lang) || { subject:"", body:"" };
+  const map = tokenMapFromSelected();
+
+  openMailPicker({
+    to,
+    subject: applyTokens(t.subject||"", map),
+    body: applyTokens(t.body||"", map)
+  });
+}
+
+/* mail: supplier buttons in table (optional later). Keeping minimal: uses SUPPLIER templates */
+function mailSupplierRow(row, lang){
+  if(!isMasterLogin()) return;
+  const to = getAny(row, ["Mail Supplier","MailSupplier"]);
+  if(!to) return;
+
+  const t = findTemplate_(LABEL_SUPPLIER, lang) || { subject:"", body:"" };
+  const map = tokenMapFromSelected();
+  openMailPicker({ to, subject: applyTokens(t.subject||"", map), body: applyTokens(t.body||"", map) });
+}
+
+/* login + orders */
+async function doLogin(withKey){
+  const key = (withKey ?? keyInput.value).trim();
+  if(!key){ loginMsg.innerHTML = "<span style='color:var(--warn)'>Please enter key.</span>"; return; }
 
   loginBtn.disabled = true;
   loginMsg.textContent = "Checking…";
@@ -973,10 +997,8 @@ async function doLogin(withKey){
       loginMsg.innerHTML = "<span style='color:var(--bad)'>Invalid key.</span>";
       return;
     }
-
     supplierKey = key;
     supplier = String(data.supplier).trim();
-
     sessionStorage.setItem("supplier_key", supplierKey);
     sessionStorage.setItem("supplier_name", supplier);
 
@@ -989,23 +1011,6 @@ async function doLogin(withKey){
   }
 }
 
-async function loadSuppliers_(){
-  try{
-    const data = await jsonp(`${API_BASE}?action=suppliers`);
-    suppliersList = (data && data.ok) ? (data.suppliers || []) : [];
-  }catch(_){
-    suppliersList = [];
-  }
-  newSupplier.innerHTML = "";
-  for(const s of suppliersList){
-    const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    newSupplier.appendChild(opt);
-  }
-}
-
-/* orders */
 async function loadOrders(){
   selected = null;
   form.classList.add("hidden");
@@ -1020,18 +1025,15 @@ async function loadOrders(){
   mailMsg.textContent = "";
 
   tbody.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
-  tbodyCompleted.innerHTML = "<tr><td colspan='3' class='muted'>Loading…</td></tr>";
 
   const url = isMasterLogin()
     ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}`
     : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
 
   const data = await jsonp(url);
-
   if(!data || !data.ok){
     const err = escapeHTML((data && data.error) || "Error");
     tbody.innerHTML = `<tr><td colspan="3" class="muted">${err}</td></tr>`;
-    tbodyCompleted.innerHTML = `<tr><td colspan="3" class="muted">${err}</td></tr>`;
     return;
   }
 
@@ -1041,121 +1043,42 @@ async function loadOrders(){
 }
 
 function renderOrders(){
-  const master = isMasterLogin();
-  completedWrap.classList.toggle("hidden", !master);
-
-  const q = (completedSearch.value || "").trim().toLowerCase();
-  const searchMatch = (o) => {
-    if(!q) return true;
-    const c = (getAny(o,["Customer"]) || "").toLowerCase();
-    const id = (getAny(o,["Order ID","OrderID"]) || "").toLowerCase();
-    return c.includes(q) || id.includes(q);
-  };
-
-  const openList = master ? orders.filter(o => !Boolean(o.Completed)) : orders.slice();
-  const doneList = master ? orders.filter(o => Boolean(o.Completed)).filter(searchMatch) : [];
-
   tbody.innerHTML = "";
-  if(!openList.length){
+  if(!orders.length){
     tbody.innerHTML = `<tr><td colspan="3" class="muted">No orders found.</td></tr>`;
-  } else {
-    for(const o of openList){
-      const ok = trackingComplete(o);
-      const sup = getAny(o,["Supplier"]);
-      const oid = getAny(o,["Order ID","OrderID"]);
-
-      const supplierLineHtml = (master && sup) ? `<div class="smallLine">${escapeHTML(sup)}</div>` : "";
-      const orderLineHtml = (oid) ? `<div class="smallLine">Order ID: ${escapeHTML(oid)}</div>` : "";
-
-      const mailSupplierBtns = master
-        ? `
-          <button class="btn" data-mailsupplier-en="${escapeHTML(o.rowId)}"><span class="flag">🇬🇧</span> EN</button>
-          <button class="btn" data-mailsupplier-nl="${escapeHTML(o.rowId)}"><span class="flag">🇳🇱</span> NL</button>
-        `
-        : "";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>
-          <div class="customerOneLine" title="${escapeHTML(getAny(o,["Customer"]))}">
-            ${escapeHTML(getAny(o,["Customer"]))}
-          </div>
-          ${supplierLineHtml}
-          ${orderLineHtml}
-        </td>
-        <td class="statusCell">
-          <div class="statusWrap">
-            <span class="status ${ok ? "ready":"missing"}">
-              <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
-            </span>
-          </div>
-        </td>
-        <td>
-          <div class="actionsCell">
-            <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-            ${mailSupplierBtns}
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    }
+    return;
   }
 
-  if(master){
-    tbodyCompleted.innerHTML = "";
-    if(!doneList.length){
-      tbodyCompleted.innerHTML = `<tr><td colspan="3" class="muted">No completed orders.</td></tr>`;
-    } else {
-      for(const o of doneList){
-        const ok = trackingComplete(o);
-        const sup = getAny(o,["Supplier"]);
-        const oid = getAny(o,["Order ID","OrderID"]);
-        const supplierLineHtml = sup ? `<div class="smallLine">${escapeHTML(sup)}</div>` : "";
-        const orderLineHtml = oid ? `<div class="smallLine">Order ID: ${escapeHTML(oid)}</div>` : "";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>
-            <div class="customerOneLine" title="${escapeHTML(getAny(o,["Customer"]))}">
-              ${escapeHTML(getAny(o,["Customer"]))}
-            </div>
-            ${supplierLineHtml}
-            ${orderLineHtml}
-          </td>
-          <td class="statusCell">
-            <div class="statusWrap">
-              <span class="status ${ok ? "ready":"missing"}">
-                <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
-              </span>
-            </div>
-          </td>
-          <td>
-            <div class="actionsCell">
-              <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-            </div>
-          </td>
-        `;
-        tbodyCompleted.appendChild(tr);
-      }
-    }
+  for(const o of orders){
+    const ok = trackingComplete(o);
+    const oid = getAny(o,["Order ID","OrderID"]);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="customerOneLine" title="${escapeHTML(getAny(o,["Customer"]))}">
+          ${escapeHTML(getAny(o,["Customer"]))}
+        </div>
+        ${oid ? `<div class="smallLine">Order ID: ${escapeHTML(oid)}</div>` : ""}
+      </td>
+      <td class="statusCell">
+        <div class="statusWrap">
+          <span class="status ${ok ? "ready":"missing"}">
+            <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
+          </span>
+        </div>
+      </td>
+      <td>
+        <div class="actionsCell">
+          <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
   }
 
   tbody.querySelectorAll("button[data-open]").forEach(btn=>{
     btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
   });
-
-  if(master){
-    tbodyCompleted.querySelectorAll("button[data-open]").forEach(btn=>{
-      btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
-    });
-
-    tbody.querySelectorAll("button[data-mailsupplier-en]").forEach(btn=>{
-      btn.addEventListener("click", ()=> mailSupplierRow(Number(btn.dataset.mailsupplierEn), "en"));
-    });
-    tbody.querySelectorAll("button[data-mailsupplier-nl]").forEach(btn=>{
-      btn.addEventListener("click", ()=> mailSupplierRow(Number(btn.dataset.mailsupplierNl), "nl"));
-    });
-  }
 }
 
 function openRow(rowId){
@@ -1193,15 +1116,11 @@ function openRow(rowId){
   setStatus(ok ? "Complete" : "Missing tracking", ok);
 
   mailCustomerWrap.classList.toggle("hidden", !isMasterLogin());
-
   mailMsg.textContent = "";
   msg.textContent = "";
 
-  // keep panels collapsed
+  // refresh templates
   if(isMasterLogin()){
-    templatesBody.classList.add("hidden"); templatesPlus.textContent = "+";
-    addBody.classList.add("hidden"); addPlus.textContent = "+";
-    addMsg.textContent = "";
     renderSavedTemplates_();
   }
 }
@@ -1238,9 +1157,9 @@ async function save(){
       selected.Carrier = Carrier;
       selected.Trackingnumber = Trackingnumber;
       selected.Trackinglink = Trackinglink;
-      renderOrders();
       setStatus("Complete", true);
       msg.innerHTML = "<span style='color:var(--ok)'>Saved ✓</span>";
+      await loadOrders();
     } else {
       msg.innerHTML = "<span style='color:var(--bad)'>Save failed.</span>";
     }
@@ -1251,110 +1170,26 @@ async function save(){
   }
 }
 
-/* mail buttons use CUSTOMER template */
-async function mailCustomer(lang){
-  if(!isMasterLogin() || !selected) return;
-
-  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
-  if(!to){
-    mailMsg.innerHTML = "<span style='color:var(--warn)'>No customer email found.</span>";
-    return;
-  }
-  const t = findTemplateByLabelLang_(LABEL_CUSTOMER, lang) || {subject:"", body:""};
-  const map = tokenMapFromSelected();
-
-  openMailPicker({
-    to,
-    subject: applyTokens(t.subject || "", map),
-    body: applyTokens(t.body || "", map),
-    afterOpen: async () => {
-      const res = await setCompleted(selected.rowId, true);
-      if(!res.ok){
-        mailMsg.innerHTML = `<span style="color:var(--warn)">Mail opened ✓ (could not save Completed)</span>`;
-        return;
-      }
-      mailMsg.innerHTML = `<span style="color:var(--ok)">Mail opened ✓ Completed saved ✓</span>`;
-      await loadOrders();
-    }
-  });
-}
-
-/* mail supplier buttons use SUPPLIER template */
-function mailSupplierRow(rowId, lang){
-  if(!isMasterLogin()) return;
-  const row = orders.find(x => Number(x.rowId) === rowId);
-  if(!row){ msg.innerHTML = "<span style='color:var(--warn)'>Row not found.</span>"; return; }
-
-  const to = getAny(row, ["Mail Supplier","MailSupplier"]);
-  if(!to){ msg.innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>"; return; }
-
-  const t = findTemplateByLabelLang_(LABEL_SUPPLIER, lang) || {subject:"", body:""};
-  const map = tokenMapFromSelected();
-
-  openMailPicker({ to, subject: applyTokens(t.subject || "", map), body: applyTokens(t.body || "", map) });
-}
-
-/* create order */
-async function createOrder(){
-  if(!isMasterLogin()) return;
-
-  const Customer = newCustomer.value.trim();
-  const MailCustomer = newMailCustomer.value.trim();
-  const Supplier = newSupplier.value;
-  const OrderID = newOrderId.value.trim();
-
-  if(!Customer || !MailCustomer || !Supplier || !OrderID){
-    createMsg.innerHTML = "<span style='color:var(--warn)'>Please fill all fields.</span>";
-    return;
-  }
-
-  createBtn.disabled = true;
-  createMsg.textContent = "Adding…";
-
-  try{
-    const url =
-      `${API_BASE}?action=create` +
-      `&supplierKey=${encodeURIComponent(supplierKey)}` +
-      `&Customer=${encodeURIComponent(Customer)}` +
-      `&MailCustomer=${encodeURIComponent(MailCustomer)}` +
-      `&Supplier=${encodeURIComponent(Supplier)}` +
-      `&OrderID=${encodeURIComponent(OrderID)}`;
-
-    const data = await jsonp(url);
-
-    if(data && data.ok){
-      createMsg.innerHTML = "<span style='color:var(--ok)'>Added ✓</span>";
-      newCustomer.value = "";
-      newMailCustomer.value = "";
-      newOrderId.value = "";
-      await loadOrders();
-    } else {
-      createMsg.innerHTML = "<span style='color:var(--bad)'>Failed: " + escapeHTML((data && data.error) || "Unknown") + "</span>";
-    }
-  }catch(_){
-    createMsg.innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
-  }finally{
-    createBtn.disabled = false;
-  }
-}
-
+/* bootstrap */
 async function bootstrapAfterLogin_(){
-  newOrderWrap.classList.toggle("hidden", !isMasterLogin());
-  mailCustomerWrap.classList.toggle("hidden", !isMasterLogin());
-  completedWrap.classList.toggle("hidden", !isMasterLogin());
-
   if(isMasterLogin()){
-    await loadSuppliers_();
     templatesCache = await loadAllTemplates_();
+  } else {
+    templatesCache = [];
   }
 
   await loadOrders();
 
-  templatesBody.classList.add("hidden"); templatesPlus.textContent = "+";
-  addBody.classList.add("hidden"); addPlus.textContent = "+";
+  // saved templates open by default
+  savedBodyWrap.classList.remove("hidden");
+  savedPlus.textContent = "–";
+
+  // build slots
+  buildSlotsUI_();
   renderSavedTemplates_();
 }
 
+/* logout */
 function logout(){
   supplier = "";
   supplierKey = "";
@@ -1365,6 +1200,82 @@ function logout(){
   sessionStorage.removeItem("supplier_name");
   showLogin();
 }
+
+/* token buttons */
+document.addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-token]");
+  if(!btn) return;
+  const token = btn.getAttribute("data-token");
+  insertToken_(token);
+});
+
+/* focus tracking on main editors */
+[carrier, trackingNumber, trackingLink, custSubject, custBody, supSubject, supBody].forEach(trackFocus_);
+
+/* toggles */
+function togglePanel(toggleEl, bodyEl, plusEl){
+  toggleEl.addEventListener("click", ()=>{
+    const isHidden = bodyEl.classList.toggle("hidden");
+    plusEl.textContent = isHidden ? "+" : "–";
+  });
+}
+togglePanel(custToggle, custBodyWrap, custPlus);
+togglePanel(supToggle, supBodyWrap, supPlus);
+togglePanel(savedToggle, savedBodyWrap, savedPlus);
+togglePanel(addToggle, addBodyWrap, addPlus);
+
+/* customer editor load/save */
+custLoad.addEventListener("click", ()=>{
+  const lang = (custLang.value||"en").toLowerCase();
+  const t = findTemplate_(LABEL_CUSTOMER, lang);
+  custSubject.value = t ? (t.subject||"") : "";
+  custBody.value = t ? (t.body||"") : "";
+  custMsg.textContent = "";
+});
+custSave.addEventListener("click", async ()=>{
+  const lang = (custLang.value||"en").toLowerCase();
+  const subject = (custSubject.value||"").trim();
+  const body = (custBody.value||"").trim();
+  if(!subject && !body){ custMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`; return; }
+  custMsg.textContent = "Saving…";
+  await upsertTemplate_(LABEL_CUSTOMER, lang, subject, body, custMsg);
+});
+
+/* supplier editor load/save */
+supLoad.addEventListener("click", ()=>{
+  const lang = (supLang.value||"en").toLowerCase();
+  const t = findTemplate_(LABEL_SUPPLIER, lang);
+  supSubject.value = t ? (t.subject||"") : "";
+  supBody.value = t ? (t.body||"") : "";
+  supMsg.textContent = "";
+});
+supSave.addEventListener("click", async ()=>{
+  const lang = (supLang.value||"en").toLowerCase();
+  const subject = (supSubject.value||"").trim();
+  const body = (supBody.value||"").trim();
+  if(!subject && !body){ supMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`; return; }
+  supMsg.textContent = "Saving…";
+  await upsertTemplate_(LABEL_SUPPLIER, lang, subject, body, supMsg);
+});
+
+/* mail buttons */
+mc_en.addEventListener("click", ()=> mailCustomer("en"));
+mc_nl.addEventListener("click", ()=> mailCustomer("nl"));
+mc_de.addEventListener("click", ()=> mailCustomer("de"));
+mc_fr.addEventListener("click", ()=> mailCustomer("fr"));
+
+/* login events */
+loginBtn.addEventListener("click", ()=> doLogin());
+clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
+keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+
+reloadBtn.addEventListener("click", async ()=>{
+  if(isMasterLogin()) templatesCache = await loadAllTemplates_();
+  await loadOrders();
+  renderSavedTemplates_();
+});
+logoutBtn.addEventListener("click", logout);
+saveBtn.addEventListener("click", save);
 
 /* init */
 (function init(){
@@ -1379,154 +1290,6 @@ function logout(){
     showLogin();
   }
 })();
-
-/* events */
-loginBtn.addEventListener("click", ()=> doLogin());
-clearBtn.addEventListener("click", ()=>{ keyInput.value=""; loginMsg.textContent=""; keyInput.focus(); });
-keyInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
-
-reloadBtn.addEventListener("click", loadOrders);
-logoutBtn.addEventListener("click", logout);
-saveBtn.addEventListener("click", save);
-
-completedSearch.addEventListener("input", renderOrders);
-
-mc_en.addEventListener("click", ()=> mailCustomer("en"));
-mc_nl.addEventListener("click", ()=> mailCustomer("nl"));
-mc_de.addEventListener("click", ()=> mailCustomer("de"));
-mc_fr.addEventListener("click", ()=> mailCustomer("fr"));
-
-newOrderToggle.addEventListener("click", ()=>{
-  const isHidden = newOrderBody.classList.toggle("hidden");
-  newOrderPlus.textContent = isHidden ? "+" : "–";
-});
-createBtn.addEventListener("click", createOrder);
-
-/* toggle panels */
-templatesToggle.addEventListener("click", async ()=>{
-  if(!isMasterLogin()) return;
-  const isHidden = templatesBody.classList.toggle("hidden");
-  templatesPlus.textContent = isHidden ? "+" : "–";
-  if(!isHidden){
-    templatesCache = await loadAllTemplates_();
-    renderSavedTemplates_();
-  }
-});
-addToggle.addEventListener("click", async ()=>{
-  if(!isMasterLogin()) return;
-  const isHidden = addBody.classList.toggle("hidden");
-  addPlus.textContent = isHidden ? "+" : "–";
-  if(!isHidden){
-    templatesCache = await loadAllTemplates_();
-    renderSavedTemplates_();
-  }
-});
-
-/* editor load/save */
-function loadEditor_(label, lang, subjectEl, bodyEl, msgEl){
-  const t = findTemplateByLabelLang_(label, lang);
-  subjectEl.value = t ? (t.subject || "") : "";
-  bodyEl.value = t ? (t.body || "") : "";
-  if(msgEl) msgEl.textContent = "";
-}
-
-custLang.addEventListener("change", ()=> loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg));
-custLoad.addEventListener("click", ()=> loadEditor_(LABEL_CUSTOMER, (custLang.value||"en").toLowerCase(), custSubject, custBody, custMsg));
-custSave.addEventListener("click", async ()=>{
-  const lang = (custLang.value||"en").toLowerCase();
-  const subject = (custSubject.value||"").trim();
-  const body = (custBody.value||"").trim();
-  if(!subject && !body){ custMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`; return; }
-  custSave.disabled = true;
-  custMsg.textContent = "Saving…";
-  await upsertTemplate_(LABEL_CUSTOMER, lang, subject, body, custMsg);
-  custSave.disabled = false;
-});
-
-supLang.addEventListener("change", ()=> loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg));
-supLoad.addEventListener("click", ()=> loadEditor_(LABEL_SUPPLIER, (supLang.value||"en").toLowerCase(), supSubject, supBody, supMsg));
-supSave.addEventListener("click", async ()=>{
-  const lang = (supLang.value||"en").toLowerCase();
-  const subject = (supSubject.value||"").trim();
-  const body = (supBody.value||"").trim();
-  if(!subject && !body){ supMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`; return; }
-  supSave.disabled = true;
-  supMsg.textContent = "Saving…";
-  await upsertTemplate_(LABEL_SUPPLIER, lang, subject, body, supMsg);
-  supSave.disabled = false;
-});
-
-/* ========= ADD templates (1..5) =========
-   Stored as label: TEMPLATE_1 ... TEMPLATE_5
-   Language from dropdown
-   "Edit" loads into customer editor (so you can edit subject/body and then save)
-   "Send" sends that template to customer (for now)
-*/
-function getAddLang(n){ return ($("addLang"+n).value || "en").toLowerCase(); }
-function getAddCustomLabel(n){ return ($("addLabel"+n).value || "").trim(); }
-function getTemplateLabelForSlot(n){ return `TEMPLATE_${n}`; }
-
-async function editSlot(n){
-  if(!isMasterLogin()) return;
-  const lang = getAddLang(n);
-  const label = getTemplateLabelForSlot(n);
-
-  // open edit templates panel and load into CUSTOMER editor fields (quickest UX)
-  templatesBody.classList.remove("hidden");
-  templatesPlus.textContent = "–";
-  templatesCache = await loadAllTemplates_();
-
-  custLang.value = lang;
-  loadEditor_(label, lang, custSubject, custBody, custMsg);
-  custMsg.innerHTML = `<span class="muted">Editing slot ${n} (${label}, ${lang.toUpperCase()})</span>`;
-
-  // When you click Save in customer editor, it saves CUSTOMER label.
-  // So we override the customer save button behavior temporarily for slot edit.
-  custSave.onclick = async ()=>{
-    const subject = (custSubject.value||"").trim();
-    const body = (custBody.value||"").trim();
-    if(!subject && !body){
-      custMsg.innerHTML = `<span style="color:var(--warn)">Please enter subject and/or body.</span>`;
-      return;
-    }
-    custSave.disabled = true;
-    custMsg.textContent = "Saving…";
-    await upsertTemplate_(label, lang, subject, body, custMsg);
-    custSave.disabled = false;
-  };
-
-  renderSavedTemplates_();
-}
-
-function sendSlot(n){
-  if(!isMasterLogin() || !selected) return;
-  const lang = getAddLang(n);
-  const label = getTemplateLabelForSlot(n);
-  const t = findTemplateByLabelLang_(label, lang);
-  if(!t){
-    addMsg.innerHTML = `<span style="color:var(--warn)">Template ${n} not found yet. Click Edit and save first.</span>`;
-    return;
-  }
-  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
-  if(!to){
-    addMsg.innerHTML = `<span style="color:var(--warn)">No customer email found.</span>`;
-    return;
-  }
-  const map = tokenMapFromSelected();
-  openMailPicker({ to, subject: applyTokens(t.subject||"", map), body: applyTokens(t.body||"", map) });
-}
-
-for(let i=1;i<=5;i++){
-  $("addEdit"+i).addEventListener("click", ()=> editSlot(i));
-  $("addSend"+i).addEventListener("click", ()=> sendSlot(i));
-}
-
-/* Also restore default customer save on load (so it doesn't stay overridden forever) */
-function restoreCustomerSaveDefault_(){
-  custSave.onclick = null;
-}
-templatesToggle.addEventListener("click", restoreCustomerSaveDefault_);
-addToggle.addEventListener("click", restoreCustomerSaveDefault_);
 </script>
 </body>
 </html>
