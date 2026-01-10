@@ -1,1186 +1,561 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Delivery Overview 📦</title>
-  <style>
-    :root{
-      --bg:#ffffff; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0;
-      --primary:#2563eb; --primary2:#1d4ed8;
-      --ok:#16a34a; --warn:#d97706; --bad:#dc2626; --soft:#f8fafc;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#ffffff 0%, #f6f7fb 100%);color:var(--text);min-height:100vh}
-    .wrap{max-width:1120px;margin:0 auto;padding:26px 16px}
-    header{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
-    h1{font-size:18px;margin:0}
-    .sub{color:var(--muted);font-size:13px;line-height:1.4}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 10px 22px rgba(2,6,23,.06)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
-    input, select, textarea{
-      width:100%;border:1px solid var(--border);background:#fff;color:var(--text);
-      padding:10px 12px;border-radius:12px;outline:none
-    }
-    textarea{resize:vertical}
-    input:focus, select:focus, textarea:focus{border-color:rgba(37,99,235,.55);box-shadow:0 0 0 4px rgba(37,99,235,.12)}
-    select{appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:none;}
+/***************************************
+ * Delivery Overview – Apps Script (FULL)
+ * - Login (master + supplier)
+ * - Orders list (master: all, supplier: own)
+ * - Update tracking
+ * - Create order (master): DropshipmentOrder + SurfcenterOrder
+ * - Completed TRUE/FALSE (master)
+ * - Suppliers list
+ * - Templates:
+ *    - Mail templates (independent): ID | Language | Label | Subject | Body  (max 10)
+ *    - Customer:                   ID | Language | Label | Subject | Body
+ *    - Supplier:                   ID | Language | Label | Subject | Body
+ * - Mail log: Timestamp | RowID | Customer | OrderID | To | Kind | Language | Template | Subject
+ ***************************************/
 
-    .btn{
-      border:1px solid var(--border);background:#fff;color:var(--text);
-      padding:10px 12px;border-radius:12px;cursor:pointer;white-space:nowrap;
-      transition:transform .05s ease, box-shadow .15s ease, background .15s ease;
-      display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    }
-    .btn:active{transform:translateY(1px)}
-    .btn.primary{background:linear-gradient(180deg,var(--primary),var(--primary2));border-color:transparent;color:#fff;box-shadow:0 8px 16px rgba(37,99,235,.18)}
-    .btn:disabled{opacity:.55;cursor:not-allowed}
-    .btn.icon{width:44px;padding:10px 0}
-    .btn.small{padding:8px 10px;border-radius:10px;font-size:12px}
-    .btn.plus{width:38px;height:38px;border-radius:12px;font-weight:900;font-size:18px;line-height:1}
-    .btn.active{
-      border-color:rgba(37,99,235,.55);
-      box-shadow:0 0 0 4px rgba(37,99,235,.12);
-    }
+const SHEET_NAME = "Sheet1";
+const SUPPLIERS_SHEET = "Suppliers";
+const MASTER_KEY = "SC76";
 
-    .table{
-      width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;
-      border:1px solid var(--border);background:#fff;
-    }
-    .table th,.table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;text-align:left}
-    .table th{color:var(--muted);font-weight:600;background:var(--soft)}
-    .table tr:last-child td{border-bottom:none}
+// Templates sheets
+const INDEP_TPL_SHEET = "Mail templates";
+const CUSTOMER_TPL_SHEET = "Customer";
+const SUPPLIER_TPL_SHEET = "Supplier";
 
-    .muted{color:var(--muted)}
-    .status{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted);white-space:nowrap;background:#fff}
-    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
-    .status.ready .dot{background:var(--ok)}
-    .status.missing .dot{background:var(--bad)}
-    .statusCell{text-align:center}
-    .statusWrap{width:100%;display:flex;justify-content:center}
+// Mail log sheet
+const MAIL_LOG_SHEET = "Mail log";
 
-    .two{display:grid;grid-template-columns:440px 1fr;gap:14px;align-items:stretch}
-    .colStretch{height:100%;display:flex;flex-direction:column}
-    @media (max-width: 980px){.two{grid-template-columns:1fr}}
+// Orders headers
+const H = {
+  customer: "Customer",
+  mailCustomer: "Mail Customer",
+  supplier: "Supplier",
+  supplierKey: "Supplier KEY",
 
-    .hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
-    .center{min-height:100vh;display:grid;place-items:center;padding:18px}
-    .hidden{display:none !important}
+  carrier: "Carrier",
+  trackingNumber: "Trackingnumber",
+  trackingLink: "Trackinglink",
 
-    .kvRow{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:10px 0 6px}
-    .kvBlock{min-width:0}
-    .kvLabel{color:var(--muted);font-size:12px}
-    .kvValue{font-size:16px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .smallLine{margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  dropOrder: "Dropshipment order",
+  surfOrder: "Surfcenter order",
 
-    .loginCard{max-width:520px;width:100%;padding:18px}
-    .loginHeader{text-align:center;margin-bottom:10px}
-    .loginForm{max-width:380px;margin:0 auto}
-    .loginActions{justify-content:center}
-    .loginMsg{text-align:center;min-height:18px}
+  completed: "Completed",
+};
 
-    .actionsCell{white-space:nowrap;display:flex;gap:8px;justify-content:flex-start;align-items:center;flex-wrap:nowrap}
-    .sectionTitle{font-size:12px;color:var(--muted);letter-spacing:.2px}
-    .divider{height:1px;background:var(--border);margin:12px 0}
+function doGet(e) {
+  try {
+    const action = String(e?.parameter?.action || "").toLowerCase();
 
-    .toggleRow{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;
-      padding:10px 12px;border:1px dashed var(--border);background:var(--soft);
-      border-radius:12px;cursor:pointer;user-select:none;
-    }
-    .plusSym{font-weight:800;font-size:18px;line-height:1;color:var(--muted)}
-    .flag{font-size:16px;line-height:1}
+    // Core
+    if (action === "auth") return authGet_(e);
+    if (action === "suppliers") return listSuppliers_(e);
+    if (action === "orders") return listOrders_(e);
+    if (action === "update") return updateTrackingGet_(e);
+    if (action === "create") return createOrderGet_(e);
+    if (action === "complete") return setCompletedGet_(e);
 
-    .mailGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:10px}
-    @media (max-width:520px){.mailGrid{grid-template-columns:1fr}}
+    // Templates
+    if (action === "indep_templates") return listTemplates_(e, INDEP_TPL_SHEET);
+    if (action === "indep_upsert") return upsertTemplate_(e, INDEP_TPL_SHEET, 10);
 
-    .flagRow{display:flex;gap:8px;flex-wrap:nowrap}
-    .rightBox{display:flex;flex-direction:column;align-items:flex-end}
-    .rightBox .row{justify-content:flex-end}
+    if (action === "customer_templates") return listTemplates_(e, CUSTOMER_TPL_SHEET);
+    if (action === "customer_upsert") return upsertTemplate_(e, CUSTOMER_TPL_SHEET, null);
 
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:520px){.grid2{grid-template-columns:1fr}}
+    if (action === "supplier_templates") return listTemplates_(e, SUPPLIER_TPL_SHEET);
+    if (action === "supplier_upsert") return upsertTemplate_(e, SUPPLIER_TPL_SHEET, null);
 
-    .topRightTools{display:flex;gap:10px;align-items:center;justify-content:flex-end}
+    // Mail log
+    if (action === "log_mail") return logMail_(e);
+    if (action === "mail_log") return listMailLog_(e);
 
-    .completedCell{text-align:center;width:110px}
-    .checkPill{
-      display:inline-flex;align-items:center;justify-content:center;
-      min-width:34px;height:26px;border-radius:999px;border:1px solid var(--border);
-      background:#fff;color:var(--muted);font-size:14px;font-weight:900;
-    }
-    .checkPill.yes{border-color:rgba(22,163,74,.35);background:rgba(22,163,74,.08);color:var(--ok)}
-
-    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.35);display:grid;place-items:center;padding:18px;z-index:9999}
-
-    .tokenRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  </style>
-</head>
-<body>
-
-<section id="loginView" class="center">
-  <div class="card loginCard">
-    <div class="loginHeader">
-      <h1>Delivery Overview 📦</h1>
-    </div>
-    <div class="loginForm">
-      <label for="keyInput">Login</label>
-      <input id="keyInput" type="password" autocomplete="current-password" placeholder="Enter…" />
-      <div class="row loginActions" style="margin-top:12px">
-        <button id="loginBtn" class="btn primary" type="button">Login</button>
-        <button id="clearBtn" class="btn" type="button">Clear</button>
-      </div>
-      <div id="loginMsg" class="hint loginMsg"></div>
-    </div>
-  </div>
-</section>
-
-<section id="portalView" class="hidden">
-  <div class="wrap">
-    <header>
-      <div>
-        <h1 id="headerTitle">Delivery Overview 📦</h1>
-        <div class="sub">Open an order to enter / check shipment details</div>
-      </div>
-      <div class="row topRightTools">
-        <button id="newOrderBtn" class="btn plus hidden" type="button" title="New order">+</button>
-        <button id="logoutBtn" class="btn icon" type="button" title="Logout">⏻</button>
-      </div>
-    </header>
-
-    <div class="two">
-      <!-- LEFT -->
-      <section class="card colStretch">
-        <div id="noSelection" class="hint">Open an order from the table.</div>
-
-        <div id="form" class="hidden" style="flex:1; display:flex; flex-direction:column;">
-          <div class="kvRow">
-            <div class="kvBlock" style="flex:1; min-width:0">
-              <div class="kvLabel">Customer</div>
-              <div class="kvValue" id="customerLabel">—</div>
-              <div class="smallLine" id="customerMailLine"></div>
-
-              <div id="supplierBlock" style="margin-top:10px">
-                <div class="kvLabel">Supplier</div>
-                <div class="kvValue" id="supplierLabel">—</div>
-                <div class="smallLine" id="supplierKeyLine"></div>
-              </div>
-
-              <div style="height:10px"></div>
-              <div class="kvLabel">Dropshipment order</div>
-              <div class="kvValue" id="dropOrderLabel">—</div>
-
-              <div id="surfOrderBlock" class="hidden" style="margin-top:10px">
-                <div class="kvLabel">Surfcenter order</div>
-                <div class="kvValue" id="surfOrderLabel">—</div>
-              </div>
-            </div>
-
-            <div class="kvBlock" style="flex:0 0 auto; display:flex; align-items:flex-start">
-              <span id="statusBadge" class="status missing">
-                <span class="dot"></span><span id="statusText">No selection</span>
-              </span>
-            </div>
-          </div>
-
-          <label>Carrier</label>
-          <input id="carrier" />
-
-          <label>Tracking number</label>
-          <input id="trackingNumber" />
-
-          <label>Tracking link</label>
-          <input id="trackingLink" />
-
-          <div class="row" style="margin-top:12px">
-            <button id="saveBtn" class="btn primary" type="button">Save</button>
-          </div>
-
-          <!-- MASTER ONLY -->
-          <div id="mailCustomerWrap" class="hidden" style="margin-top:12px">
-            <div class="mailGrid">
-              <div>
-                <div class="sectionTitle" style="margin-bottom:8px">Mail customer</div>
-                <div class="flagRow">
-                  <button class="btn icon" id="mc_en" title="EN"><span class="flag">🇬🇧</span></button>
-                  <button class="btn icon" id="mc_nl" title="NL"><span class="flag">🇳🇱</span></button>
-                  <button class="btn icon" id="mc_de" title="DE"><span class="flag">🇩🇪</span></button>
-                  <button class="btn icon" id="mc_fr" title="FR"><span class="flag">🇫🇷</span></button>
-                </div>
-                <div class="hint" id="mailMsg"></div>
-              </div>
-
-              <div class="rightBox">
-                <div class="sectionTitle" style="margin-bottom:8px">Mail supplier</div>
-                <div class="flagRow">
-                  <button class="btn icon" id="ms_en" title="EN"><span class="flag">🇬🇧</span></button>
-                  <button class="btn icon" id="ms_nl" title="NL"><span class="flag">🇳🇱</span></button>
-                </div>
-                <div class="hint" id="mailSupplierMsg"></div>
-              </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- ✅ Restore: Edit Mail customer (collapsed) -->
-            <div class="toggleRow" id="editCustomerToggle">
-              <div class="sectionTitle">Edit Mail customer</div>
-              <div class="plusSym" id="editCustomerPlus">+</div>
-            </div>
-            <div id="editCustomerBody" class="hidden" style="margin-top:10px">
-              <div class="grid2">
-                <div>
-                  <label style="margin-top:0">Language</label>
-                  <select id="editCustomerLang">
-                    <option value="en">EN</option>
-                    <option value="nl">NL</option>
-                    <option value="de">DE</option>
-                    <option value="fr">FR</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="margin-top:0">Template name</label>
-                  <input id="editCustomerName" value="DEFAULT" />
-                </div>
-              </div>
-
-              <label>Subject</label>
-              <input id="editCustomerSubject" />
-
-              <label>Body</label>
-              <textarea id="editCustomerBodyText" rows="7"></textarea>
-
-              <div class="tokenRow">
-                <button class="btn small" type="button" data-token="{{Customer}}">{{Customer}}</button>
-                <button class="btn small" type="button" data-token="{{CustomerFull}}">{{CustomerFull}}</button>
-                <button class="btn small" type="button" data-token="{{DropshipmentOrder}}">{{DropshipmentOrder}}</button>
-                <button class="btn small" type="button" data-token="{{SurfcenterOrder}}">{{SurfcenterOrder}}</button>
-                <button class="btn small" type="button" data-token="{{Carrier}}">{{Carrier}}</button>
-                <button class="btn small" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}}</button>
-                <button class="btn small" type="button" data-token="{{Trackinglink}}">{{Trackinglink}}</button>
-                <button class="btn small" type="button" data-token="{{Supplier}}">{{Supplier}}</button>
-                <button class="btn small" type="button" data-token="{{SupplierKey}}">{{SupplierKey}}</button>
-              </div>
-
-              <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px">
-                <button id="editCustomerSave" class="btn primary" type="button">Save</button>
-                <button id="editCustomerSend" class="btn" type="button">Send</button>
-              </div>
-              <div class="hint" id="editCustomerMsg"></div>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- ✅ Restore: Edit Mail supplier (collapsed) -->
-            <div class="toggleRow" id="editSupplierToggle">
-              <div class="sectionTitle">Edit Mail supplier</div>
-              <div class="plusSym" id="editSupplierPlus">+</div>
-            </div>
-            <div id="editSupplierBody" class="hidden" style="margin-top:10px">
-              <div class="grid2">
-                <div>
-                  <label style="margin-top:0">Language</label>
-                  <select id="editSupplierLang">
-                    <option value="en">EN</option>
-                    <option value="nl">NL</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="margin-top:0">Template name</label>
-                  <input id="editSupplierName" value="DEFAULT" />
-                </div>
-              </div>
-
-              <label>Subject</label>
-              <input id="editSupplierSubject" />
-
-              <label>Body</label>
-              <textarea id="editSupplierBodyText" rows="7"></textarea>
-
-              <div class="tokenRow">
-                <button class="btn small" type="button" data-token="{{Customer}}">{{Customer}}</button>
-                <button class="btn small" type="button" data-token="{{CustomerFull}}">{{CustomerFull}}</button>
-                <button class="btn small" type="button" data-token="{{DropshipmentOrder}}">{{DropshipmentOrder}}</button>
-                <button class="btn small" type="button" data-token="{{SurfcenterOrder}}">{{SurfcenterOrder}}</button>
-                <button class="btn small" type="button" data-token="{{Carrier}}">{{Carrier}}</button>
-                <button class="btn small" type="button" data-token="{{Trackingnumber}}">{{Trackingnumber}}</button>
-                <button class="btn small" type="button" data-token="{{Trackinglink}}">{{Trackinglink}}</button>
-                <button class="btn small" type="button" data-token="{{Supplier}}">{{Supplier}}</button>
-                <button class="btn small" type="button" data-token="{{SupplierKey}}">{{SupplierKey}}</button>
-              </div>
-
-              <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px">
-                <button id="editSupplierSave" class="btn primary" type="button">Save</button>
-                <button id="editSupplierSend" class="btn" type="button">Send</button>
-              </div>
-              <div class="hint" id="editSupplierMsg"></div>
-            </div>
-
-          </div>
-
-          <div class="hint" id="msg" style="margin-top:auto"></div>
-        </div>
-      </section>
-
-      <!-- RIGHT -->
-      <section class="card colStretch">
-        <input id="historySearch" placeholder="Search…" style="width:100%;margin-bottom:12px" />
-
-        <table class="table">
-          <thead>
-            <tr>
-              <th style="width:60%">Customer</th>
-              <th style="width:170px;text-align:center">Status</th>
-              <th style="width:260px">Action</th>
-              <th class="completedCell">Completed</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyOpen">
-            <tr><td colspan="4" class="muted">Loading…</td></tr>
-          </tbody>
-        </table>
-
-        <div id="completedWrap" class="hidden" style="margin-top:12px">
-          <div class="divider"></div>
-          <div class="toggleRow" id="completedToggle">
-            <div class="sectionTitle">Completed</div>
-            <div class="plusSym" id="completedPlus">+</div>
-          </div>
-          <div id="completedBody" class="hidden" style="margin-top:10px">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th style="width:60%">Customer</th>
-                  <th style="width:170px;text-align:center">Status</th>
-                  <th style="width:260px">Action</th>
-                  <th class="completedCell">Completed</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyCompleted">
-                <tr><td colspan="4" class="muted">No completed orders.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div style="flex:1"></div>
-      </section>
-    </div>
-  </div>
-</section>
-
-<!-- New order modal -->
-<div id="newOrderModal" class="overlay hidden">
-  <div class="card" style="max-width:520px;width:100%">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <div style="font-weight:800">New order</div>
-      <button id="newOrderClose" class="btn" type="button">Close</button>
-    </div>
-
-    <label>Customer</label>
-    <input id="newCustomer" />
-
-    <label>Mail Customer</label>
-    <input id="newMailCustomer" type="email" />
-
-    <label>Supplier</label>
-    <select id="newSupplier"></select>
-
-    <label>Dropshipment order</label>
-    <input id="newDropOrder" />
-
-    <label>Surfcenter order</label>
-    <input id="newSurfOrder" />
-
-    <div class="row" style="margin-top:12px;justify-content:flex-end">
-      <button id="createBtn" class="btn primary" type="button">Add order</button>
-    </div>
-
-    <div class="hint" id="createMsg"></div>
-  </div>
-</div>
-
-<!-- Mail picker -->
-<div id="mailPicker" class="hidden" style="position:fixed;inset:0;background:rgba(15,23,42,.35);display:grid;place-items:center;padding:18px;z-index:9999">
-  <div class="card" style="max-width:420px;width:100%">
-    <div style="font-weight:700;font-size:14px">Choose mail app</div>
-    <div class="row" style="margin-top:12px; justify-content:center">
-      <button id="pickGmail" class="btn" type="button">Gmail</button>
-      <button id="pickApple" class="btn" type="button">Apple Mail</button>
-      <button id="pickCancel" class="btn primary" type="button">Cancel</button>
-    </div>
-    <div class="hint" id="pickHint"></div>
-  </div>
-</div>
-
-<script>
-/** ✅ Put your /exec URL here */
-const API_BASE = "https://script.google.com/macros/s/AKfycby0Cy9zyaaTj3qlnmBz8ZvdNGylcd8dOLCnx-JGBCB94YXVZ8krPeGylDmreAcXbj4DjA/exec";
-const MASTER_SUPPLIER_NAME = "ALL";
-const $ = (id)=>document.getElementById(id);
-
-/* utils */
-function escapeHTML(s){
-  return String(s || "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+    return output_({ ok: false, error: "Unknown action", gotAction: action }, e);
+  } catch (err) {
+    return output_({ ok: false, error: String(err && err.message ? err.message : err) }, e);
+  }
 }
-function normalizeKey(k){ return String(k || "").trim().toLowerCase().replace(/\s+/g," "); }
-function getAny(obj, wantedKeys){
-  if(!obj) return "";
-  const map = {};
-  for (const k of Object.keys(obj)) map[normalizeKey(k)] = k;
-  for (const want of wantedKeys){
-    const hit = map[normalizeKey(want)];
-    if(hit){
-      const v = obj[hit];
-      if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+
+/* =========================
+ * AUTH
+ * ========================= */
+function authGet_(e) {
+  const supplierKey = String(e?.parameter?.supplierKey || "").trim();
+  if (!supplierKey) return output_({ ok: false, error: "Missing supplierKey" }, e);
+
+  if (supplierKey === MASTER_KEY) {
+    return output_({ ok: true, supplier: "ALL" }, e);
+  }
+
+  const supplierName = findSupplierByKey_(supplierKey);
+  if (supplierName) return output_({ ok: true, supplier: supplierName }, e);
+
+  return output_({ ok: false, error: "Invalid key" }, e);
+}
+
+/* =========================
+ * SUPPLIERS
+ * ========================= */
+function listSuppliers_(e) {
+  const sh = suppliersSheet_();
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return output_({ ok: true, suppliers: [], mailMap: {}, keyMap: {} }, e);
+
+  const suppliers = [];
+  const mailMap = {};
+  const keyMap = {};
+
+  for (let i = 1; i < values.length; i++) {
+    const supplier = String(values[i][0] || "").trim(); // A
+    const mail = String(values[i][1] || "").trim();     // B
+    const key = String(values[i][2] || "").trim();      // C
+    if (!supplier) continue;
+
+    suppliers.push(supplier);
+    if (mail) mailMap[supplier.toLowerCase()] = mail;
+    if (key) keyMap[supplier.toLowerCase()] = key;
+  }
+
+  return output_({ ok: true, suppliers, mailMap, keyMap }, e);
+}
+
+/* =========================
+ * LIST ORDERS
+ * ========================= */
+function listOrders_(e) {
+  const supplierRaw = String(e?.parameter?.supplier || "").trim();
+  if (!supplierRaw) return output_({ ok: false, error: "Missing supplier" }, e);
+
+  const supplierLower = supplierRaw.toLowerCase();
+  const isAll = supplierLower === "all";
+
+  const sh = sheet_();
+  const { rows, idx } = read_(sh);
+
+  mustHave_(idx, [H.customer, H.supplier, H.carrier, H.trackingNumber, H.trackingLink]);
+  mustHave_(idx, [H.dropOrder, H.surfOrder, H.completed]);
+
+  const hasMailCustomer = idx[H.mailCustomer] !== undefined;
+
+  const supplierMailMap = buildSupplierMailMap_();
+  const supplierKeyMap = buildSupplierKeyMap_();
+
+  const orders = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowSupplier = String(row[idx[H.supplier]] || "").trim();
+
+    if (!isAll && rowSupplier.toLowerCase() !== supplierLower) continue;
+
+    const customer = String(row[idx[H.customer]] || "").trim();
+    if (!customer && !rowSupplier) continue;
+
+    const completedRaw = String(row[idx[H.completed]] || "").trim().toUpperCase();
+    const completed = (completedRaw === "TRUE" || completedRaw === "YES" || completedRaw === "1");
+
+    orders.push({
+      rowId: i + 2,
+
+      Customer: customer,
+      Supplier: rowSupplier,
+
+      "Mail Customer": hasMailCustomer ? String(row[idx[H.mailCustomer]] || "").trim() : "",
+
+      "Dropshipment order": String(row[idx[H.dropOrder]] || "").trim(),
+      "Surfcenter order": String(row[idx[H.surfOrder]] || "").trim(),
+
+      Carrier: String(row[idx[H.carrier]] || "").trim(),
+      Trackingnumber: String(row[idx[H.trackingNumber]] || "").trim(),
+      Trackinglink: String(row[idx[H.trackingLink]] || "").trim(),
+
+      "Mail Supplier": supplierMailMap[rowSupplier.toLowerCase()] || "",
+      "Supplier KEY": supplierKeyMap[rowSupplier.toLowerCase()] || "",
+
+      Completed: completed,
+    });
+  }
+
+  return output_({ ok: true, orders }, e);
+}
+
+/* =========================
+ * UPDATE TRACKING
+ * ========================= */
+function updateTrackingGet_(e) {
+  const rowId = Number(e?.parameter?.rowId);
+  const supplier = String(e?.parameter?.supplier || "").trim();
+  const supplierKey = String(e?.parameter?.supplierKey || "").trim();
+
+  if (!rowId || rowId < 2) return output_({ ok: false, error: "Invalid rowId" }, e);
+  if (!supplier || !supplierKey) return output_({ ok: false, error: "Missing supplier or supplierKey" }, e);
+
+  const Carrier = String(e?.parameter?.Carrier || "").trim();
+  const Trackingnumber = String(e?.parameter?.Trackingnumber || "").trim();
+  const Trackinglink = String(e?.parameter?.Trackinglink || "").trim();
+  if (!Carrier || !Trackingnumber || !Trackinglink) return output_({ ok: false, error: "Missing tracking fields" }, e);
+
+  const isMaster = supplierKey === MASTER_KEY;
+
+  const sh = sheet_();
+  const { idx } = read_(sh);
+  mustHave_(idx, [H.supplier, H.carrier, H.trackingNumber, H.trackingLink]);
+
+  if (!isMaster) {
+    const sheetSupplier = String(sh.getRange(rowId, idx[H.supplier] + 1).getValue() || "").trim().toLowerCase();
+    if (sheetSupplier !== supplier.toLowerCase()) return output_({ ok: false, error: "Unauthorized" }, e);
+
+    const expectedKey = findKeyBySupplier_(supplier);
+    if (!expectedKey || expectedKey !== supplierKey) return output_({ ok: false, error: "Unauthorized" }, e);
+  }
+
+  sh.getRange(rowId, idx[H.carrier] + 1).setValue(Carrier);
+  sh.getRange(rowId, idx[H.trackingNumber] + 1).setValue(Trackingnumber);
+  sh.getRange(rowId, idx[H.trackingLink] + 1).setValue(Trackinglink);
+
+  return output_({ ok: true }, e);
+}
+
+/* =========================
+ * CREATE ORDER (MASTER ONLY)
+ * ========================= */
+function createOrderGet_(e) {
+  const supplierKey = String(e?.parameter?.supplierKey || "").trim();
+  if (supplierKey !== MASTER_KEY) return output_({ ok: false, error: "Unauthorized" }, e);
+
+  const Customer = String(e?.parameter?.Customer || "").trim();
+  const MailCustomer = String(e?.parameter?.MailCustomer || "").trim();
+  const Supplier = String(e?.parameter?.Supplier || "").trim();
+  const DropshipmentOrder = String(e?.parameter?.DropshipmentOrder || "").trim();
+  const SurfcenterOrder = String(e?.parameter?.SurfcenterOrder || "").trim();
+
+  if (!Customer || !MailCustomer || !Supplier || !DropshipmentOrder || !SurfcenterOrder) {
+    return output_({ ok: false, error: "Missing fields" }, e);
+  }
+
+  const sh = sheet_();
+  const { idx } = read_(sh);
+
+  mustHave_(idx, [H.customer, H.mailCustomer, H.supplier, H.dropOrder, H.surfOrder, H.completed]);
+
+  const lastCol = sh.getLastColumn();
+  const newRow = new Array(lastCol).fill("");
+
+  newRow[idx[H.customer]] = Customer;
+  newRow[idx[H.mailCustomer]] = MailCustomer;
+  newRow[idx[H.supplier]] = Supplier;
+  newRow[idx[H.dropOrder]] = DropshipmentOrder;
+  newRow[idx[H.surfOrder]] = SurfcenterOrder;
+
+  if (idx[H.supplierKey] !== undefined) {
+    const k = findKeyBySupplier_(Supplier);
+    if (k) newRow[idx[H.supplierKey]] = k;
+  }
+
+  newRow[idx[H.completed]] = "FALSE";
+
+  sh.appendRow(newRow);
+  return output_({ ok: true }, e);
+}
+
+/* =========================
+ * COMPLETED (MASTER ONLY)
+ * ========================= */
+function setCompletedGet_(e) {
+  const supplierKey = String(e?.parameter?.supplierKey || "").trim();
+  if (supplierKey !== MASTER_KEY) return output_({ ok: false, error: "Unauthorized" }, e);
+
+  const rowId = Number(e?.parameter?.rowId);
+  if (!rowId || rowId < 2) return output_({ ok: false, error: "Invalid rowId" }, e);
+
+  const CompletedRaw = String(e?.parameter?.Completed ?? e?.parameter?.completed ?? "")
+    .trim()
+    .toUpperCase();
+
+  if (CompletedRaw !== "TRUE" && CompletedRaw !== "FALSE") {
+    return output_({ ok: false, error: "Completed must be TRUE or FALSE" }, e);
+  }
+
+  const sh = sheet_();
+  const { idx } = read_(sh);
+  mustHave_(idx, [H.completed]);
+
+  sh.getRange(rowId, idx[H.completed] + 1).setValue(CompletedRaw);
+  return output_({ ok: true }, e);
+}
+
+/* =========================
+ * TEMPLATES
+ * Sheet: ID | Language | Label | Subject | Body
+ * ========================= */
+function listTemplates_(e, sheetName) {
+  mustBeMaster_(e);
+
+  const sh = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sh) throw new Error(`Sheet not found: ${sheetName}`);
+
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return output_({ ok: true, templates: [] }, e);
+
+  const hdr = values[0].map(String);
+  const idx = indexMap_(hdr);
+
+  const need = ["ID", "Language", "Label", "Subject", "Body"];
+  for (const h of need) if (idx[h] === undefined) throw new Error(`Missing column header in "${sheetName}": ${h}`);
+
+  const templates = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const id = String(r[idx["ID"]] || "").trim();
+    const language = String(r[idx["Language"]] || "").trim().toLowerCase();
+    const label = String(r[idx["Label"]] || "").trim();
+    const subject = String(r[idx["Subject"]] || "").trim();
+    const body = String(r[idx["Body"]] || "").trim();
+    if (!id || !language || !label) continue;
+    templates.push({ id, language, label, subject, body });
+  }
+
+  return output_({ ok: true, templates }, e);
+}
+
+function upsertTemplate_(e, sheetName, maxCount /* number|null */) {
+  mustBeMaster_(e);
+
+  const sh = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sh) throw new Error(`Sheet not found: ${sheetName}`);
+
+  const values = sh.getDataRange().getValues();
+  if (values.length < 1) throw new Error(`Sheet is empty: ${sheetName}`);
+
+  const hdr = values[0].map(String);
+  const idx = indexMap_(hdr);
+
+  const need = ["ID", "Language", "Label", "Subject", "Body"];
+  for (const h of need) if (idx[h] === undefined) throw new Error(`Missing column header in "${sheetName}": ${h}`);
+
+  const idParam = String(e?.parameter?.id || "").trim();
+  const language = String(e?.parameter?.language || "").trim().toLowerCase();
+  const label = String(e?.parameter?.label || "").trim();
+  const subject = String(e?.parameter?.subject || "").trim();
+  const body = String(e?.parameter?.body || "").trim();
+
+  if (!language) return output_({ ok: false, error: "Missing language" }, e);
+  if (!label) return output_({ ok: false, error: "Missing label" }, e);
+
+  let foundRow = 0; // 1-based
+  if (idParam) {
+    for (let r = 2; r <= values.length; r++) {
+      const cur = String(values[r - 1][idx["ID"]] || "").trim();
+      if (cur === idParam) { foundRow = r; break; }
     }
   }
-  return "";
-}
-function isMasterLogin(){
-  return String(supplier || "").trim().toLowerCase() === String(MASTER_SUPPLIER_NAME).toLowerCase();
-}
-function jsonp(url){
-  return new Promise((resolve, reject) => {
-    const cb = "cb_" + Math.random().toString(36).slice(2);
-    const script = document.createElement("script");
-    window[cb] = (data) => { try{delete window[cb]}catch(_){} script.remove(); resolve(data); };
-    script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb;
-    script.onerror = () => { try{delete window[cb]}catch(_){} script.remove(); reject(new Error("JSONP failed")); };
-    document.head.appendChild(script);
-  });
-}
-function trackingComplete(o){
-  return !!(getAny(o,["Carrier"]) && getAny(o,["Trackingnumber","Tracking Number"]) && getAny(o,["Trackinglink","Tracking Link"]));
-}
-function setStatus(text, ok){
-  $("statusBadge").classList.remove("ready","missing");
-  $("statusBadge").classList.add(ok ? "ready" : "missing");
-  $("statusText").textContent = text;
+
+  // enforce max for independent templates
+  if (!foundRow && typeof maxCount === "number") {
+    let count = 0;
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][idx["ID"]] || "").trim()) count++;
+    }
+    if (count >= maxCount) return output_({ ok:false, error:`Max ${maxCount} templates reached` }, e);
+  }
+
+  const id = foundRow ? idParam : Utilities.getUuid();
+
+  if (!foundRow) {
+    const newRow = new Array(sh.getLastColumn()).fill("");
+    newRow[idx["ID"]] = id;
+    newRow[idx["Language"]] = language;
+    newRow[idx["Label"]] = label;
+    newRow[idx["Subject"]] = subject;
+    newRow[idx["Body"]] = body;
+    sh.appendRow(newRow);
+    return output_({ ok: true, id, mode: "insert" }, e);
+  }
+
+  sh.getRange(foundRow, idx["Language"] + 1).setValue(language);
+  sh.getRange(foundRow, idx["Label"] + 1).setValue(label);
+  sh.getRange(foundRow, idx["Subject"] + 1).setValue(subject);
+  sh.getRange(foundRow, idx["Body"] + 1).setValue(body);
+
+  return output_({ ok: true, id, mode: "update" }, e);
 }
 
-/* state */
-let supplier = "";
-let supplierKey = "";
-let orders = [];
-let selected = null;
-let suppliersList = [];
-let suppliersMailMap = {};
-let suppliersKeyMap = {};
+/* =========================
+ * MAIL LOG
+ * Sheet: Timestamp | RowID | Customer | OrderID | To | Kind | Language | Template | Subject
+ * ========================= */
+function logMail_(e) {
+  mustBeMaster_(e);
 
-let customerTemplates = []; // from sheet "Customer"
-let supplierTemplates = []; // from sheet "Supplier"
+  const sh = SpreadsheetApp.getActive().getSheetByName(MAIL_LOG_SHEET);
+  if (!sh) throw new Error(`Sheet not found: ${MAIL_LOG_SHEET}`);
 
-let lastFocusedField = null;
+  const { idx } = read_(sh);
+  const need = ["Timestamp","RowID","Customer","OrderID","To","Kind","Language","Template","Subject"];
+  for (const h of need) if (idx[h] === undefined) throw new Error(`Missing column header in "${MAIL_LOG_SHEET}": ${h}`);
 
-/* token helpers */
-function firstNameFromCustomer_(full){
-  const s = String(full||"").trim();
-  if(!s) return "";
-  return s.split(/\s+/)[0] || s;
+  const RowID = String(e?.parameter?.RowID || "").trim();
+  if (!RowID) return output_({ ok:false, error:"Missing RowID" }, e);
+
+  const Customer = String(e?.parameter?.Customer || "").trim();
+  const OrderID = String(e?.parameter?.OrderID || "").trim();
+  const To = String(e?.parameter?.To || "").trim();
+  const Kind = String(e?.parameter?.Kind || "").trim();
+  const Language = String(e?.parameter?.Language || "").trim();
+  const Template = String(e?.parameter?.Template || "").trim();
+  const Subject = String(e?.parameter?.Subject || "").trim();
+
+  const newRow = new Array(sh.getLastColumn()).fill("");
+  newRow[idx["Timestamp"]] = new Date();
+  newRow[idx["RowID"]] = RowID;
+  newRow[idx["Customer"]] = Customer;
+  newRow[idx["OrderID"]] = OrderID;
+  newRow[idx["To"]] = To;
+  newRow[idx["Kind"]] = Kind;
+  newRow[idx["Language"]] = Language;
+  newRow[idx["Template"]] = Template;
+  newRow[idx["Subject"]] = Subject;
+
+  sh.appendRow(newRow);
+  return output_({ ok:true }, e);
 }
-function tokenMap(){
-  const fullCustomer = getAny(selected, ["Customer"]) || "";
-  const sup = getAny(selected, ["Supplier"]) || "";
-  const rowSupKey = getAny(selected, ["Supplier KEY","SupplierKey","Supplier KEY "]) || "";
-  const supKey = isMasterLogin() ? rowSupKey : supplierKey;
 
-  const drop = getAny(selected, ["Dropshipment order","Dropshipment Order","DropshipmentOrder","Order ID","OrderID"]) || "";
-  const surf = getAny(selected, ["Surfcenter order","Surfcenter Order","SurfcenterOrder"]) || "";
+function listMailLog_(e) {
+  mustBeMaster_(e);
 
-  return {
-    "{{Customer}}": firstNameFromCustomer_(fullCustomer),
-    "{{CustomerFull}}": fullCustomer,
-    "{{DropshipmentOrder}}": drop,
-    "{{SurfcenterOrder}}": surf,
-    "{{Carrier}}": ($("carrier").value.trim() || getAny(selected, ["Carrier"]) || ""),
-    "{{Trackingnumber}}": ($("trackingNumber").value.trim() || getAny(selected, ["Trackingnumber","Tracking Number"]) || ""),
-    "{{Trackinglink}}": ($("trackingLink").value.trim() || getAny(selected, ["Trackinglink","Tracking Link"]) || ""),
-    "{{Supplier}}": sup,
-    "{{SupplierKey}}": supKey,
-  };
+  const sh = SpreadsheetApp.getActive().getSheetByName(MAIL_LOG_SHEET);
+  if (!sh) throw new Error(`Sheet not found: ${MAIL_LOG_SHEET}`);
+
+  const RowID = String(e?.parameter?.RowID || "").trim();
+  if (!RowID) return output_({ ok:false, error:"Missing RowID" }, e);
+
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return output_({ ok:true, rows: [] }, e);
+
+  const hdr = values[0].map(String);
+  const idx = indexMap_(hdr);
+  const need = ["Timestamp","RowID","Template","Subject"];
+  for (const h of need) if (idx[h] === undefined) throw new Error(`Missing column header in "${MAIL_LOG_SHEET}": ${h}`);
+
+  const out = [];
+  for (let i = values.length - 1; i >= 1; i--) {
+    const r = values[i];
+    if (String(r[idx["RowID"]] || "").trim() !== RowID) continue;
+
+    out.push({
+      Timestamp: formatTs_(r[idx["Timestamp"]]),
+      Template: String(r[idx["Template"]] || "").trim() || "-",
+      Subject: String(r[idx["Subject"]] || "").trim() || "-",
+    });
+
+    if (out.length >= 50) break;
+  }
+
+  return output_({ ok:true, rows: out }, e);
 }
-function applyTokens(txt){
-  let out = String(txt||"");
-  const m = tokenMap();
-  for(const k of Object.keys(m)) out = out.split(k).join(String(m[k]||""));
+
+/* =========================
+ * HELPERS
+ * ========================= */
+function mustBeMaster_(e) {
+  const supplierKey = String(e?.parameter?.supplierKey || "").trim();
+  if (supplierKey !== MASTER_KEY) throw new Error("Unauthorized");
+}
+
+function sheet_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+  if (!sh) throw new Error(`Sheet not found: ${SHEET_NAME}`);
+  return sh;
+}
+
+function suppliersSheet_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SUPPLIERS_SHEET);
+  if (!sh) throw new Error(`Sheet not found: ${SUPPLIERS_SHEET}`);
+  return sh;
+}
+
+function read_(sh) {
+  const values = sh.getDataRange().getValues();
+  const headers = values[0].map(String);
+  const rows = values.slice(1);
+  const idx = {};
+  headers.forEach((h, i) => (idx[h] = i));
+  return { headers, rows, idx };
+}
+
+function mustHave_(idx, headers) {
+  for (const h of headers) if (idx[h] === undefined) throw new Error(`Missing column header: ${h}`);
+}
+
+function indexMap_(headers) {
+  const idx = {};
+  headers.forEach((h,i)=> idx[String(h)] = i);
+  return idx;
+}
+
+function output_(obj, e) {
+  const json = JSON.stringify(obj);
+  const cb = e && e.parameter && e.parameter.callback ? String(e.parameter.callback) : "";
+  const body = cb ? `${cb}(${json});` : json;
+
+  const out = ContentService.createTextOutput(body);
+  out.setMimeType(cb ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JAVASCRIPT);
   return out;
 }
 
-/* focus tracking for token insertion */
-document.addEventListener("focusin", (e)=>{
-  const el = e.target;
-  if(!el) return;
-  const tag = (el.tagName || "").toLowerCase();
-  if(tag === "input" || tag === "textarea") lastFocusedField = el;
-});
-function insertAtCursor_(el, text){
-  if(!el) return;
-  const start = (typeof el.selectionStart === "number") ? el.selectionStart : el.value.length;
-  const end = (typeof el.selectionEnd === "number") ? el.selectionEnd : el.value.length;
-  el.value = el.value.slice(0, start) + text + el.value.slice(end);
-  const pos = start + text.length;
-  if(el.setSelectionRange) el.setSelectionRange(pos, pos);
-  el.focus && el.focus();
-}
-function bindTokenButtons_(){
-  document.querySelectorAll("button[data-token]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const token = btn.getAttribute("data-token");
-      const fallback = $("editCustomerBodyText");
-      const target = lastFocusedField || fallback;
-      insertAtCursor_(target, token);
-    });
-  });
-}
-
-/* mail picker */
-let pendingMail = null;
-function openGmailCompose(to, subject, body){
-  const gmailUrl =
-    "https://mail.google.com/mail/?view=cm&fs=1" +
-    `&to=${encodeURIComponent(to)}` +
-    `&su=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(body)}`;
-  window.open(gmailUrl, "_blank", "noopener,noreferrer");
-}
-function openAppleMail(to, subject, body){
-  const mailtoUrl =
-    "mailto:" + encodeURIComponent(to) +
-    `?subject=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(body)}`;
-  window.location.href = mailtoUrl;
-}
-function openMailPicker(payload){
-  pendingMail = payload;
-  $("pickHint").textContent = "";
-  $("mailPicker").classList.remove("hidden");
-}
-function closeMailPicker(){
-  pendingMail = null;
-  $("mailPicker").classList.add("hidden");
-}
-$("pickGmail").addEventListener("click", ()=>{
-  if(!pendingMail) return;
-  openGmailCompose(pendingMail.to, pendingMail.subject, pendingMail.body);
-  const cb = pendingMail.afterOpen;
-  closeMailPicker();
-  if(typeof cb === "function") cb();
-});
-$("pickApple").addEventListener("click", ()=>{
-  if(!pendingMail) return;
-  openAppleMail(pendingMail.to, pendingMail.subject, pendingMail.body);
-  const cb = pendingMail.afterOpen;
-  closeMailPicker();
-  if(typeof cb === "function") cb();
-});
-$("pickCancel").addEventListener("click", closeMailPicker);
-$("mailPicker").addEventListener("click", (e)=>{ if(e.target === $("mailPicker")) closeMailPicker(); });
-
-/* toggles */
-function setupToggle(toggleId, bodyId, plusId){
-  const t = $(toggleId), b = $(bodyId), p = $(plusId);
-  if(!t || !b || !p) return;
-  t.addEventListener("click", ()=>{
-    const isHidden = b.classList.toggle("hidden");
-    p.textContent = isHidden ? "+" : "–";
-  });
-}
-setupToggle("editCustomerToggle","editCustomerBody","editCustomerPlus");
-setupToggle("editSupplierToggle","editSupplierBody","editSupplierPlus");
-setupToggle("completedToggle","completedBody","completedPlus");
-
-/* suppliers */
-async function loadSuppliers_(){
-  if(!isMasterLogin()) return;
-
-  const data = await jsonp(`${API_BASE}?action=suppliers&supplierKey=${encodeURIComponent(supplierKey)}`).catch(()=>null);
-  if(!data || !data.ok){ suppliersList=[]; suppliersMailMap={}; suppliersKeyMap={}; return; }
-
-  suppliersList = Array.isArray(data.suppliers) ? data.suppliers : [];
-  suppliersMailMap = (data.mailMap && typeof data.mailMap === "object") ? data.mailMap : {};
-  suppliersKeyMap = (data.keyMap && typeof data.keyMap === "object") ? data.keyMap : {};
-
-  $("newSupplier").innerHTML = "";
-  for(const s of suppliersList){
-    const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    $("newSupplier").appendChild(opt);
+function formatTs_(v) {
+  if (!v) return "";
+  try {
+    const d = (v instanceof Date) ? v : new Date(v);
+    return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+  } catch(_) {
+    return String(v);
   }
 }
 
-/* templates */
-async function loadMailTemplates_(){
-  if(!isMasterLogin()) return;
-
-  const c = await jsonp(`${API_BASE}?action=customer_templates&supplierKey=${encodeURIComponent(supplierKey)}`).catch(()=>null);
-  customerTemplates = (c && c.ok && Array.isArray(c.templates)) ? c.templates : [];
-
-  const s = await jsonp(`${API_BASE}?action=supplier_templates&supplierKey=${encodeURIComponent(supplierKey)}`).catch(()=>null);
-  supplierTemplates = (s && s.ok && Array.isArray(s.templates)) ? s.templates : [];
-
-  // prefill editors with DEFAULT if exists
-  fillCustomerEditorFromLang_($("editCustomerLang").value);
-  fillSupplierEditorFromLang_($("editSupplierLang").value);
-}
-function findTpl_(arr, lang){
-  const l = String(lang||"").toLowerCase();
-  // prefer DEFAULT label (what you used before)
-  return arr.find(x => String(x.language||"").toLowerCase()===l && String(x.label||"").toUpperCase()==="DEFAULT")
-      || arr.find(x => String(x.language||"").toLowerCase()===l)
-      || null;
-}
-function fillCustomerEditorFromLang_(lang){
-  const t = findTpl_(customerTemplates, lang);
-  $("editCustomerName").value = "DEFAULT";
-  $("editCustomerSubject").value = t ? (t.subject||"") : "";
-  $("editCustomerBodyText").value = t ? (t.body||"") : "";
-  $("editCustomerMsg").textContent = "";
-}
-function fillSupplierEditorFromLang_(lang){
-  const t = findTpl_(supplierTemplates, lang);
-  $("editSupplierName").value = "DEFAULT";
-  $("editSupplierSubject").value = t ? (t.subject||"") : "";
-  $("editSupplierBodyText").value = t ? (t.body||"") : "";
-  $("editSupplierMsg").textContent = "";
-}
-$("editCustomerLang").addEventListener("change", ()=> fillCustomerEditorFromLang_($("editCustomerLang").value));
-$("editSupplierLang").addEventListener("change", ()=> fillSupplierEditorFromLang_($("editSupplierLang").value));
-
-async function saveCustomerTemplate_(){
-  const lang = ($("editCustomerLang").value||"en").toLowerCase();
-  const name = "DEFAULT";
-  const subject = ($("editCustomerSubject").value||"").trim();
-  const body = ($("editCustomerBodyText").value||"").trim();
-  const msg = $("editCustomerMsg");
-
-  const existing = findTpl_(customerTemplates, lang);
-  const url =
-    `${API_BASE}?action=customer_upsert&supplierKey=${encodeURIComponent(supplierKey)}` +
-    (existing?.id ? `&id=${encodeURIComponent(existing.id)}` : "") +
-    `&language=${encodeURIComponent(lang)}` +
-    `&label=${encodeURIComponent(name)}` +
-    `&subject=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(body)}`;
-
-  msg.textContent = "Saving…";
-  const data = await jsonp(url).catch(()=>null);
-  if(!data || !data.ok){
-    msg.innerHTML = `<span style="color:var(--bad)">Save failed.</span>`;
-    return;
+/* Suppliers */
+function findSupplierByKey_(key) {
+  const sh = suppliersSheet_();
+  const values = sh.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    const supplier = String(values[i][0] || "").trim(); // A
+    const k = String(values[i][2] || "").trim();        // C
+    if (k && k === key && supplier) return supplier;
   }
-  msg.innerHTML = `<span style="color:var(--ok)">Saved ✓</span>`;
-  await loadMailTemplates_();
+  return "";
 }
 
-async function saveSupplierTemplate_(){
-  const lang = ($("editSupplierLang").value||"en").toLowerCase();
-  const name = "DEFAULT";
-  const subject = ($("editSupplierSubject").value||"").trim();
-  const body = ($("editSupplierBodyText").value||"").trim();
-  const msg = $("editSupplierMsg");
+function findKeyBySupplier_(supplierName) {
+  const needle = String(supplierName || "").trim().toLowerCase();
+  if (!needle) return "";
 
-  const existing = findTpl_(supplierTemplates, lang);
-  const url =
-    `${API_BASE}?action=supplier_upsert&supplierKey=${encodeURIComponent(supplierKey)}` +
-    (existing?.id ? `&id=${encodeURIComponent(existing.id)}` : "") +
-    `&language=${encodeURIComponent(lang)}` +
-    `&label=${encodeURIComponent(name)}` +
-    `&subject=${encodeURIComponent(subject)}` +
-    `&body=${encodeURIComponent(body)}`;
-
-  msg.textContent = "Saving…";
-  const data = await jsonp(url).catch(()=>null);
-  if(!data || !data.ok){
-    msg.innerHTML = `<span style="color:var(--bad)">Save failed.</span>`;
-    return;
+  const sh = suppliersSheet_();
+  const values = sh.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    const supplier = String(values[i][0] || "").trim().toLowerCase(); // A
+    const k = String(values[i][2] || "").trim();                      // C
+    if (supplier && supplier === needle && k) return k;
   }
-  msg.innerHTML = `<span style="color:var(--ok)">Saved ✓</span>`;
-  await loadMailTemplates_();
+  return "";
 }
 
-/* mail actions */
-function setBtnActive_(btn){
-  // activate within its flagRow only
-  const row = btn.closest(".flagRow");
-  if(!row) return;
-  row.querySelectorAll(".btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-}
-
-async function setCompleted(rowId, val){
-  if(!isMasterLogin()) return { ok:false, error:"Not master" };
-  const completedValue = val ? "TRUE" : "FALSE";
-  const url = `${API_BASE}?action=complete&supplierKey=${encodeURIComponent(supplierKey)}&rowId=${encodeURIComponent(rowId)}&Completed=${encodeURIComponent(completedValue)}`;
-  try{
-    const data = await jsonp(url);
-    if(data && data.ok) return { ok:true };
-    return { ok:false, error: (data && data.error) ? String(data.error) : "Unknown" };
-  }catch(_){
-    return { ok:false, error:"Could not reach server" };
+function buildSupplierMailMap_() {
+  const sh = suppliersSheet_();
+  const values = sh.getDataRange().getValues();
+  const map = {};
+  for (let i = 1; i < values.length; i++) {
+    const s = String(values[i][0] || "").trim();
+    const m = String(values[i][1] || "").trim();
+    if (s && m) map[s.toLowerCase()] = m;
   }
+  return map;
 }
 
-function customerDraftFromLang_(lang){
-  const t = findTpl_(customerTemplates, lang) || { subject:"", body:"" };
-  const subject = applyTokens(t.subject||"");
-  const body = applyTokens(t.body||"");
-  return { subject, body };
-}
-function supplierDraftFromLang_(lang){
-  const t = findTpl_(supplierTemplates, lang) || { subject:"", body:"" };
-  const subject = applyTokens(t.subject||"");
-  const body = applyTokens(t.body||"");
-  return { subject, body };
-}
-
-async function mailCustomer(lang, clickedBtn){
-  if(!isMasterLogin() || !selected) return;
-  if(clickedBtn) setBtnActive_(clickedBtn);
-
-  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
-  if(!to){
-    $("mailMsg").innerHTML = "<span style='color:var(--warn)'>No customer email found.</span>";
-    return;
+function buildSupplierKeyMap_() {
+  const sh = suppliersSheet_();
+  const values = sh.getDataRange().getValues();
+  const map = {};
+  for (let i = 1; i < values.length; i++) {
+    const s = String(values[i][0] || "").trim();
+    const k = String(values[i][2] || "").trim();
+    if (s && k) map[s.toLowerCase()] = k;
   }
-
-  const tpl = customerDraftFromLang_(lang);
-  openMailPicker({
-    to,
-    subject: tpl.subject,
-    body: tpl.body,
-    afterOpen: async () => {
-      // ✅ restore Completed after customer mail
-      $("mailMsg").textContent = "Mail opened. Saving Completed…";
-      const res = await setCompleted(selected.rowId, true);
-      if(!res.ok){
-        $("mailMsg").innerHTML = `<span style="color:var(--warn)">Mail opened ✓ (could not save Completed)</span>`;
-        return;
-      }
-      $("mailMsg").innerHTML = `<span style="color:var(--ok)">Mail opened ✓ Completed saved ✓</span>`;
-      await loadOrders();
-    }
-  });
+  return map;
 }
-
-async function mailSupplier(lang, clickedBtn){
-  if(!isMasterLogin() || !selected) return;
-  if(clickedBtn) setBtnActive_(clickedBtn);
-
-  const supName = getAny(selected, ["Supplier"]) || "";
-  const to = suppliersMailMap[String(supName).toLowerCase()] || getAny(selected, ["Mail Supplier","MailSupplier"]) || "";
-  if(!to){
-    $("mailSupplierMsg").innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>";
-    return;
-  }
-
-  const tpl = supplierDraftFromLang_(lang);
-  openMailPicker({ to, subject: tpl.subject, body: tpl.body });
-  $("mailSupplierMsg").innerHTML = `<span style="color:var(--ok)">Mail opened ✓</span>`;
-}
-
-/* orders */
-async function loadOrders(){
-  selected = null;
-  $("form").classList.add("hidden");
-  $("noSelection").classList.remove("hidden");
-
-  $("customerLabel").textContent = "—";
-  $("customerMailLine").textContent = "";
-  $("supplierLabel").textContent = "—";
-  $("supplierKeyLine").textContent = "";
-  $("dropOrderLabel").textContent = "—";
-  $("surfOrderLabel").textContent = "—";
-
-  setStatus("No selection", false);
-  $("msg").textContent = "";
-  $("mailMsg").textContent = "";
-  $("mailSupplierMsg").textContent = "";
-
-  $("tbodyOpen").innerHTML = "<tr><td colspan='4' class='muted'>Loading…</td></tr>";
-  $("tbodyCompleted").innerHTML = "<tr><td colspan='4' class='muted'>Loading…</td></tr>";
-
-  const url = isMasterLogin()
-    ? `${API_BASE}?action=orders&supplier=ALL&supplierKey=${encodeURIComponent(supplierKey)}`
-    : `${API_BASE}?action=orders&supplier=${encodeURIComponent(supplier)}`;
-
-  const data = await jsonp(url).catch(()=>null);
-  if(!data || !data.ok){
-    const err = escapeHTML((data && data.error) || "Error");
-    $("tbodyOpen").innerHTML = `<tr><td colspan="4" class="muted">${err}</td></tr>`;
-    $("tbodyCompleted").innerHTML = `<tr><td colspan="4" class="muted">${err}</td></tr>`;
-    return;
-  }
-
-  orders = (data.orders || []).slice();
-  orders.sort((a,b)=> Number(b.rowId||0) - Number(a.rowId||0));
-  renderOrders();
-}
-
-function renderOrders(){
-  const openTB = $("tbodyOpen");
-  const doneTB = $("tbodyCompleted");
-  openTB.innerHTML = "";
-  doneTB.innerHTML = "";
-
-  const q = ($("historySearch").value || "").trim().toLowerCase();
-  const match = (o) => {
-    if(!q) return true;
-    const name = (getAny(o,["Customer"]) || "").toLowerCase();
-    const email = (getAny(o,["Mail Customer","MailCustomer"]) || "").toLowerCase();
-    const oid = (getAny(o,["Dropshipment order","DropshipmentOrder","Order ID","OrderID","Surfcenter order","SurfcenterOrder"]) || "").toLowerCase();
-    return name.includes(q) || email.includes(q) || oid.includes(q);
-  };
-
-  const openList = isMasterLogin()
-    ? orders.filter(o => !Boolean(o.Completed)).filter(match)
-    : orders.filter(match);
-
-  const doneList = isMasterLogin()
-    ? orders.filter(o => Boolean(o.Completed)).filter(match)
-    : [];
-
-  const renderRow = (o, targetTB)=>{
-    const ok = trackingComplete(o);
-    const mailC = getAny(o, ["Mail Customer","MailCustomer"]);
-
-    const drop = getAny(o, ["Dropshipment order","DropshipmentOrder","Order ID","OrderID"]);
-    const surf = getAny(o, ["Surfcenter order","SurfcenterOrder"]);
-    const showOrder = isMasterLogin() ? (surf || drop) : drop;
-    const orderLineHtml = showOrder ? `<div class="smallLine">${escapeHTML(showOrder)}</div>` : "";
-
-    const completed = Boolean(o.Completed);
-    const completedHtml = completed ? `<span class="checkPill yes">✓</span>` : `<span class="checkPill">—</span>`;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <div style="font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHTML(getAny(o,["Customer"]))}">
-          ${escapeHTML(getAny(o,["Customer"]))}
-        </div>
-        ${mailC ? `<div class="smallLine">${escapeHTML(mailC)}</div>` : ""}
-        ${orderLineHtml}
-      </td>
-      <td class="statusCell">
-        <div class="statusWrap">
-          <span class="status ${ok ? "ready":"missing"}">
-            <span class="dot"></span>${ok ? "Complete" : "Missing tracking"}
-          </span>
-        </div>
-      </td>
-      <td>
-        <div class="actionsCell">
-          <button class="btn" data-open="${escapeHTML(o.rowId)}">Open</button>
-        </div>
-      </td>
-      <td class="completedCell">${completedHtml}</td>
-    `;
-    targetTB.appendChild(tr);
-  };
-
-  if(!openList.length){
-    openTB.innerHTML = `<tr><td colspan="4" class="muted">No orders found.</td></tr>`;
-  } else {
-    openList.forEach(o => renderRow(o, openTB));
-  }
-
-  if(isMasterLogin()){
-    if(!doneList.length){
-      doneTB.innerHTML = `<tr><td colspan="4" class="muted">No completed orders.</td></tr>`;
-    } else {
-      doneList.forEach(o => renderRow(o, doneTB));
-    }
-  }
-
-  document.querySelectorAll("button[data-open]").forEach(btn=>{
-    btn.addEventListener("click", ()=> openRow(Number(btn.dataset.open)));
-  });
-}
-
-function openRow(rowId){
-  selected = orders.find(x => Number(x.rowId) === rowId);
-  if(!selected) return;
-
-  $("customerLabel").textContent = getAny(selected,["Customer"]) || "—";
-  $("customerMailLine").textContent = getAny(selected,["Mail Customer","MailCustomer"]) || "";
-
-  // Supplier block: show only in master view
-  $("supplierBlock").classList.toggle("hidden", !isMasterLogin());
-  $("supplierLabel").textContent = isMasterLogin()
-    ? (getAny(selected,["Supplier"]) || "—")
-    : (supplier || "—");
-
-  // ✅ show Supplier KEY (you wanted visible)
-  const rowSupKey = getAny(selected, ["Supplier KEY","SupplierKey","Supplier KEY "]) || "";
-  $("supplierKeyLine").textContent = isMasterLogin() ? (`Supplier KEY: ${rowSupKey || "—"}`) : "";
-
-  const drop = getAny(selected, ["Dropshipment order","DropshipmentOrder","Order ID","OrderID"]);
-  const surf = getAny(selected, ["Surfcenter order","SurfcenterOrder"]);
-
-  $("dropOrderLabel").textContent = drop || "—";
-  $("surfOrderBlock").classList.toggle("hidden", !isMasterLogin());
-  $("surfOrderLabel").textContent = surf || "—";
-
-  $("carrier").value = getAny(selected,["Carrier"]) || "";
-  $("trackingNumber").value = getAny(selected,["Trackingnumber","Tracking Number"]) || "";
-  $("trackingLink").value = getAny(selected,["Trackinglink","Tracking Link"]) || "";
-
-  $("noSelection").classList.add("hidden");
-  $("form").classList.remove("hidden");
-
-  const ok = trackingComplete(selected);
-  setStatus(ok ? "Complete" : "Missing tracking", ok);
-
-  $("mailCustomerWrap").classList.toggle("hidden", !isMasterLogin());
-  $("mailMsg").textContent = "";
-  $("mailSupplierMsg").textContent = "";
-  $("msg").textContent = "";
-}
-
-/* save tracking */
-async function save(){
-  if(!selected) return;
-
-  const Carrier = $("carrier").value.trim();
-  const Trackingnumber = $("trackingNumber").value.trim();
-  const Trackinglink = $("trackingLink").value.trim();
-
-  if(!Carrier || !Trackingnumber || !Trackinglink){
-    $("msg").innerHTML = "<span style='color:var(--warn)'>Please fill in all fields.</span>";
-    return;
-  }
-
-  $("saveBtn").disabled = true;
-  $("msg").textContent = "Saving…";
-
-  try{
-    const url =
-      `${API_BASE}?action=update` +
-      `&rowId=${encodeURIComponent(selected.rowId)}` +
-      `&supplier=${encodeURIComponent(supplier)}` +
-      `&supplierKey=${encodeURIComponent(supplierKey)}` +
-      `&Carrier=${encodeURIComponent(Carrier)}` +
-      `&Trackingnumber=${encodeURIComponent(Trackingnumber)}` +
-      `&Trackinglink=${encodeURIComponent(Trackinglink)}`;
-
-    const data = await jsonp(url);
-
-    if(data && data.ok){
-      selected.Carrier = Carrier;
-      selected.Trackingnumber = Trackingnumber;
-      selected.Trackinglink = Trackinglink;
-      renderOrders();
-      setStatus("Complete", true);
-      $("msg").innerHTML = "<span style='color:var(--ok)'>Saved ✓</span>";
-    } else {
-      $("msg").innerHTML = "<span style='color:var(--bad)'>Save failed.</span>";
-    }
-  }catch(_){
-    $("msg").innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
-  }finally{
-    $("saveBtn").disabled = false;
-  }
-}
-
-/* create order (✅ fixed params for new Apps Script) */
-async function createOrder(){
-  if(!isMasterLogin()) return;
-
-  const Customer = $("newCustomer").value.trim();
-  const MailCustomer = $("newMailCustomer").value.trim();
-  const Supplier = $("newSupplier").value;
-  const DropshipmentOrder = $("newDropOrder").value.trim();
-  const SurfcenterOrder = $("newSurfOrder").value.trim();
-
-  if(!Customer || !MailCustomer || !Supplier || !DropshipmentOrder || !SurfcenterOrder){
-    $("createMsg").innerHTML = "<span style='color:var(--warn)'>Please fill all fields.</span>";
-    return;
-  }
-
-  $("createBtn").disabled = true;
-  $("createMsg").textContent = "Adding…";
-
-  try{
-    const url =
-      `${API_BASE}?action=create` +
-      `&supplierKey=${encodeURIComponent(supplierKey)}` +
-      `&Customer=${encodeURIComponent(Customer)}` +
-      `&MailCustomer=${encodeURIComponent(MailCustomer)}` +
-      `&Supplier=${encodeURIComponent(Supplier)}` +
-      `&DropshipmentOrder=${encodeURIComponent(DropshipmentOrder)}` +
-      `&SurfcenterOrder=${encodeURIComponent(SurfcenterOrder)}`;
-
-    const data = await jsonp(url);
-
-    if(data && data.ok){
-      $("createMsg").innerHTML = "<span style='color:var(--ok)'>Added ✓</span>";
-      $("newCustomer").value = "";
-      $("newMailCustomer").value = "";
-      $("newDropOrder").value = "";
-      $("newSurfOrder").value = "";
-      $("newOrderModal").classList.add("hidden");
-      await loadOrders();
-    } else {
-      $("createMsg").innerHTML = "<span style='color:var(--bad)'>Failed: " + escapeHTML((data && data.error) || "Unknown") + "</span>";
-    }
-  }catch(_){
-    $("createMsg").innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
-  }finally{
-    $("createBtn").disabled = false;
-  }
-}
-
-/* login */
-function showLogin(){
-  $("portalView").classList.add("hidden");
-  $("loginView").classList.remove("hidden");
-  $("loginMsg").textContent = "";
-  $("keyInput").value = "";
-  setTimeout(()=> $("keyInput").focus(), 50);
-}
-function showPortal(){
-  $("loginView").classList.add("hidden");
-  $("portalView").classList.remove("hidden");
-}
-async function doLogin(withKey){
-  const key = (withKey ?? $("keyInput").value).trim();
-  if(!key){
-    $("loginMsg").innerHTML = "<span style='color:var(--warn)'>Please enter login.</span>";
-    return;
-  }
-
-  $("loginBtn").disabled = true;
-  $("loginMsg").textContent = "Checking…";
-
-  try{
-    const data = await jsonp(`${API_BASE}?action=auth&supplierKey=${encodeURIComponent(key)}`);
-    if(!data || !data.ok || !data.supplier){
-      $("loginMsg").innerHTML = "<span style='color:var(--bad)'>Invalid login.</span>";
-      return;
-    }
-
-    supplierKey = key;
-    supplier = String(data.supplier).trim();
-    sessionStorage.setItem("supplier_key", supplierKey);
-    sessionStorage.setItem("supplier_name", supplier);
-
-    $("headerTitle").textContent = isMasterLogin() ? "Delivery Overview 📦" : (supplier + " 📦");
-    showPortal();
-
-    $("newOrderBtn").classList.toggle("hidden", !isMasterLogin());
-    $("mailCustomerWrap").classList.toggle("hidden", !isMasterLogin());
-    $("completedWrap").classList.toggle("hidden", !isMasterLogin());
-
-    if(isMasterLogin()){
-      await loadSuppliers_();
-      await loadMailTemplates_();
-    }
-    await loadOrders();
-
-  }catch(_){
-    $("loginMsg").innerHTML = "<span style='color:var(--bad)'>Could not reach server.</span>";
-  }finally{
-    $("loginBtn").disabled = false;
-  }
-}
-function logout(){
-  supplier = "";
-  supplierKey = "";
-  orders = [];
-  selected = null;
-  suppliersList = [];
-  suppliersMailMap = {};
-  suppliersKeyMap = {};
-  customerTemplates = [];
-  supplierTemplates = [];
-  sessionStorage.removeItem("supplier_key");
-  sessionStorage.removeItem("supplier_name");
-  showLogin();
-}
-
-/* modal open/close */
-$("newOrderBtn").addEventListener("click", ()=> $("newOrderModal").classList.remove("hidden"));
-$("newOrderClose").addEventListener("click", ()=> $("newOrderModal").classList.add("hidden"));
-$("newOrderModal").addEventListener("click", (e)=>{ if(e.target === $("newOrderModal")) $("newOrderModal").classList.add("hidden"); });
-
-/* events */
-$("loginBtn").addEventListener("click", ()=> doLogin());
-$("clearBtn").addEventListener("click", ()=>{ $("keyInput").value=""; $("loginMsg").textContent=""; $("keyInput").focus(); });
-$("keyInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
-
-$("logoutBtn").addEventListener("click", logout);
-$("saveBtn").addEventListener("click", save);
-
-$("historySearch").addEventListener("input", renderOrders);
-
-$("createBtn").addEventListener("click", createOrder);
-
-$("editCustomerSave").addEventListener("click", saveCustomerTemplate_);
-$("editSupplierSave").addEventListener("click", saveSupplierTemplate_);
-
-$("editCustomerSend").addEventListener("click", ()=>{
-  if(!selected) return;
-  const to = getAny(selected, ["Mail Customer","MailCustomer"]);
-  if(!to){ $("editCustomerMsg").innerHTML = "<span style='color:var(--warn)'>No customer email found.</span>"; return; }
-  openMailPicker({
-    to,
-    subject: applyTokens(($("editCustomerSubject").value||"").trim()),
-    body: applyTokens(($("editCustomerBodyText").value||"").trim()),
-    afterOpen: async () => {
-      // keep same behavior as flags: set completed
-      await setCompleted(selected.rowId, true);
-      await loadOrders();
-    }
-  });
-});
-
-$("editSupplierSend").addEventListener("click", ()=>{
-  if(!selected) return;
-  const supName = getAny(selected, ["Supplier"]) || "";
-  const to = suppliersMailMap[String(supName).toLowerCase()] || getAny(selected, ["Mail Supplier","MailSupplier"]) || "";
-  if(!to){ $("editSupplierMsg").innerHTML = "<span style='color:var(--warn)'>No supplier email found.</span>"; return; }
-  openMailPicker({
-    to,
-    subject: applyTokens(($("editSupplierSubject").value||"").trim()),
-    body: applyTokens(($("editSupplierBodyText").value||"").trim()),
-  });
-});
-
-/* flag buttons */
-$("mc_en").addEventListener("click", (e)=> mailCustomer("en", e.currentTarget));
-$("mc_nl").addEventListener("click", (e)=> mailCustomer("nl", e.currentTarget));
-$("mc_de").addEventListener("click", (e)=> mailCustomer("de", e.currentTarget));
-$("mc_fr").addEventListener("click", (e)=> mailCustomer("fr", e.currentTarget));
-
-$("ms_en").addEventListener("click", (e)=> mailSupplier("en", e.currentTarget));
-$("ms_nl").addEventListener("click", (e)=> mailSupplier("nl", e.currentTarget));
-
-/* init */
-(function init(){
-  bindTokenButtons_();
-  const k = sessionStorage.getItem("supplier_key") || "";
-  const s = sessionStorage.getItem("supplier_name") || "";
-  if(k && s){
-    supplierKey = k;
-    supplier = s;
-    $("headerTitle").textContent = (String(s).toLowerCase() === "all") ? "Delivery Overview 📦" : (supplier + " 📦");
-    showPortal();
-    $("newOrderBtn").classList.toggle("hidden", !isMasterLogin());
-    $("mailCustomerWrap").classList.toggle("hidden", !isMasterLogin());
-    $("completedWrap").classList.toggle("hidden", !isMasterLogin());
-    (async ()=>{
-      if(isMasterLogin()){
-        await loadSuppliers_();
-        await loadMailTemplates_();
-      }
-      await loadOrders();
-    })();
-  } else {
-    showLogin();
-  }
-})();
-</script>
-</body>
-</html>
